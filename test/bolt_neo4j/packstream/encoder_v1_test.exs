@@ -1,0 +1,92 @@
+defmodule BoltNeo4j.Packstream.EncoderV1Test do
+  use ExUnit.Case
+
+  alias BoltNeo4j.Packstream.EncoderV1
+
+  describe "Encode Atoms:" do
+    test "nil" do
+      assert <<0xC0>> = EncoderV1.encode_atom(nil)
+    end
+
+    test "true" do
+      assert <<0xC3>> = EncoderV1.encode_atom(true)
+    end
+
+    test "false" do
+      assert <<0xC2>> = EncoderV1.encode_atom(false)
+    end
+  end
+
+  describe "Encode integers:" do
+    test "tiny int" do
+      assert <<0x2A>> = EncoderV1.encode_integer(42)
+    end
+
+    test "int8" do
+      assert <<0xC8, 0xD6>> = EncoderV1.encode_integer(-42)
+    end
+
+    test "int16" do
+      assert <<0xC9, 0x10, 0x68>> = EncoderV1.encode_integer(4200)
+    end
+
+    test "negative int16" do
+      assert <<0xC9, 0xEF, 0x98>> = EncoderV1.encode_integer(-4200)
+    end
+
+    test "int32" do
+      assert <<0xCA, 0x00, 0x00, 0xA4, 0x10>> = EncoderV1.encode_integer(42_000)
+    end
+
+    test "negative int32" do
+      assert <<0xCA, 0xFF, 0xFF, 0x5B, 0xF0>> = EncoderV1.encode_integer(-42_000)
+    end
+
+    test "int64" do
+      assert <<0xCB, 0x00, 0x00, 0x00, 0x09, 0xC7, 0x65, 0x24, 0x00>> =
+               EncoderV1.encode_integer(42_000_000_000)
+    end
+
+    test "negative int64" do
+      assert <<0xCB, 0xFF, 0xFF, 0xFF, 0xF6, 0x38, 0x9A, 0xDC, 0x00>> =
+               EncoderV1.encode_integer(-42_000_000_000)
+    end
+
+    test "Out of range low" do
+      assert {:error, _} = EncoderV1.encode_integer(-9_223_372_036_854_775_809)
+    end
+
+    test "Out of range high" do
+      assert {:error, _} = EncoderV1.encode_integer(9_223_372_036_854_775_809)
+    end
+  end
+
+  describe "Encode lists: " do
+    test "empty list" do
+      assert <<0x90>> = EncoderV1.encode_list([], 2)
+    end
+
+    test "Tiny list" do
+      assert <<0x94, 0x1, 0x3, 0x4, 0x6>> = EncoderV1.encode_list([1, 3, 4, 6], 1)
+    end
+
+    test "List8" do
+      res = EncoderV1.encode_list([1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0], 1)
+
+      assert <<0xD4, 0x14, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0x0, 0x1, 0x2, 0x3, 0x4,
+               0x5, 0x6, 0x7, 0x8, 0x9, 0x0>> = res
+    end
+
+    test "list16" do
+      res = EncoderV1.encode_list(Enum.into(1..258, []), 1)
+      assert <<0xD5, 0x1, 0x2, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, _::binary>> = res
+    end
+
+    test "list32" do
+      res = EncoderV1.encode_list(Enum.into(1..66_000, []), 1)
+
+      assert <<0xD6, 0x0, 0x1, 0x1, 0xD0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xA, 0xB,
+               0xC, _::binary>> = res
+    end
+  end
+end
