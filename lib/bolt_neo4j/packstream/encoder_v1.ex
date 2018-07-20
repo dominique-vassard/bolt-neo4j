@@ -1,4 +1,6 @@
 defmodule BoltNeo4j.Packstream.EncoderV1 do
+  alias BoltNeo4j.Packstream.Encoder
+
   @null_marker 0xC0
   @true_marker 0xC3
   @false_marker 0xC2
@@ -19,15 +21,20 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
 
   @float_marker 0xC1
 
+  @tiny_string_marker 0x8
+  @string8_marker 0xD0
+  @string16_marker 0xD1
+  @string32_marker 0xD2
+
   @tiny_list_marker 0x9
   @list8_marker 0xD4
   @list16_marker 0xD5
   @list32_marker 0xD6
 
-  @tiny_string_marker 0x8
-  @string8_marker 0xD0
-  @string16_marker 0xD1
-  @string32_marker 0xD2
+  @tiny_map_marker 0xA
+  @map8_marker 0xD8
+  @map16_marker 0xD9
+  @map32_marker 0xDA
 
   @doc """
   Encode atoms
@@ -38,6 +45,7 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
   def encode_atom(nil), do: <<@null_marker>>
   def encode_atom(true), do: <<@true_marker>>
   def encode_atom(false), do: <<@false_marker>>
+  def encode_atom(other), do: other |> Atom.to_string() |> encode_string()
 
   def encode_string(str) when byte_size(str) < 16 do
     <<@tiny_string_marker::4, byte_size(str)::4, (str <> <<>>)>>
@@ -57,6 +65,11 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
 
   def encode_string(_) do
     {:error, "String too long"}
+  end
+
+  # Float encoding
+  def encode_float(number) do
+    <<@float_marker, number::float>>
   end
 
   # List encoding
@@ -80,9 +93,21 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
     {:error, "List too long"}
   end
 
-  # Float encoding
-  def encode_float(number) do
-    <<@float_marker, number::float>>
+  # Map encoding
+  def encode_map(map, version) when map_size(map) < 16 do
+    <<@tiny_map_marker::4, map_size(map)::4>> <> encode_map_data(map, version)
+  end
+
+  def encode_map(map, version) when map_size(map) < 256 do
+    <<@map8_marker, map_size(map)::8>> <> encode_map_data(map, version)
+  end
+
+  def encode_map(map, version) when map_size(map) < 65_536 do
+    <<@map16_marker, map_size(map)::8>> <> encode_map_data(map, version)
+  end
+
+  def encode_map(map, version) when map_size(map) < 4_294_967_295 do
+    <<@map32_marker, map_size(map)::8>> <> encode_map_data(map, version)
   end
 
   # Integer encoding
@@ -112,6 +137,11 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
 
   defp encode_list_data(data, version) do
     data
-    |> Enum.into(<<>>, &BoltNeo4j.Packstream.Encoder.encode(&1, version))
+    |> Enum.into(<<>>, &Encoder.encode(&1, version))
+  end
+
+  defp encode_map_data(data, version) do
+    data
+    |> Enum.map_join(fn {k, v} -> Encoder.encode(k, version) <> Encoder.encode(v, version) end)
   end
 end

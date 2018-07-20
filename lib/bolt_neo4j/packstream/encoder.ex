@@ -36,6 +36,12 @@ defimpl BoltNeo4j.Packstream.Encoder, for: Float do
   end
 end
 
+defimpl BoltNeo4j.Packstream.Encoder, for: Map do
+  def encode(data, version) do
+    EncoderHelper.call_encode(:map, data, version)
+  end
+end
+
 defimpl BoltNeo4j.Packstream.Encoder, for: Any do
   def encode(_, version) do
     {:error, "Type not supported in version #{version}"}

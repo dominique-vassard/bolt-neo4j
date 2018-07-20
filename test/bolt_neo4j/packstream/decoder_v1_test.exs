@@ -124,4 +124,60 @@ defmodule BoltNeo4j.Packstream.DecoderV1Test do
                DecoderV1.decode(<<0xC1, 0xBF, 0xF1, 0x99, 0x99, 0x99, 0x99, 0x99, 0x9A>>, 1)
     end
   end
+
+  describe "Decode maps: " do
+    test "Empty map" do
+      assert [%{}] = DecoderV1.decode(<<0xA0>>, 1)
+    end
+
+    test "Tiny map" do
+      assert [%{"a" => 1}] = DecoderV1.decode(<<0xA1, 0x81, 0x61, 0x1>>, 1)
+    end
+
+    test "Map8" do
+      map = [
+        %{
+          "a" => 1,
+          "b" => 1,
+          "c" => 3,
+          "d" => 4,
+          "e" => 5,
+          "f" => 6,
+          "g" => 7,
+          "h" => 8,
+          "i" => 9,
+          "j" => 0,
+          "k" => 1,
+          "l" => 2,
+          "m" => 3,
+          "n" => 4,
+          "o" => 5,
+          "p" => 6
+        }
+      ]
+
+      assert ^map =
+               DecoderV1.decode(
+                 <<0xD8, 0x10, 0x81, 0x61, 0x1, 0x81, 0x62, 0x1, 0x81, 0x63, 0x3, 0x81, 0x64, 0x4,
+                   0x81, 0x65, 0x5, 0x81, 0x66, 0x6, 0x81, 0x67, 0x7, 0x81, 0x68, 0x8, 0x81, 0x69,
+                   0x9, 0x81, 0x6A, 0x0, 0x81, 0x6B, 0x1, 0x81, 0x6C, 0x2, 0x81, 0x6D, 0x3, 0x81,
+                   0x6E, 0x4, 0x81, 0x6F, 0x5, 0x81, 0x70, 0x6>>,
+                 1
+               )
+    end
+
+    test "Map16" do
+      original = 1..258 |> Enum.map(&{"a#{&1}", &1}) |> Map.new()
+      encoded = EncoderV1.encode_map(original, 1)
+      res = DecoderV1.decode(encoded, 1)
+      assert res |> List.first() |> map_size() == 258
+    end
+
+    test "Map32" do
+      original = 1..66_000 |> Enum.map(&{"a#{&1}", &1}) |> Map.new()
+      encoded = EncoderV1.encode_map(original, 1)
+      res = DecoderV1.decode(encoded, 1)
+      assert res |> List.first() |> map_size() == 66_000
+    end
+  end
 end

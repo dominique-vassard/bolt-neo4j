@@ -136,4 +136,54 @@ defmodule BoltNeo4j.Packstream.EncoderV1Test do
                EncoderV1.encode_float(-1.1)
     end
   end
+
+  describe "Encode maps:" do
+    test "Empty map" do
+      assert <<0xA0>> = EncoderV1.encode_map(%{}, 1)
+    end
+
+    test "Tiny map" do
+      assert <<0xA1, 0x81, 0x61, 0x1>> = EncoderV1.encode_map(%{a: 1}, 1)
+    end
+
+    test "Map8" do
+      map = %{
+        a: 1,
+        b: 1,
+        c: 3,
+        d: 4,
+        e: 5,
+        f: 6,
+        g: 7,
+        h: 8,
+        i: 9,
+        j: 0,
+        k: 1,
+        l: 2,
+        m: 3,
+        n: 4,
+        o: 5,
+        p: 6
+      }
+
+      res = EncoderV1.encode_map(map, 1)
+
+      assert <<0xD8, 0x10, 0x81, 0x61, 0x1, 0x81, 0x62, 0x1, 0x81, 0x63, 0x3, 0x81, 0x64, 0x4,
+               0x81, 0x65, 0x5, 0x81, 0x66, 0x6, 0x81, 0x67, 0x7, 0x81, 0x68, 0x8, 0x81, 0x69,
+               0x9, 0x81, 0x6A, 0x0, 0x81, 0x6B, 0x1, 0x81, 0x6C, 0x2, 0x81, 0x6D, 0x3, 0x81,
+               0x6E, 0x4, 0x81, 0x6F, 0x5, 0x81, 0x70, 0x6>> = res
+    end
+
+    test "Map16" do
+      map = 1..258 |> Enum.map(&{"a#{&1}", &1}) |> Map.new()
+
+      assert <<0xD9, 0x2, 0x84, _::binary>> = EncoderV1.encode_map(map, 1)
+    end
+
+    test "Map32" do
+      map = 1..66_000 |> Enum.map(&{"a#{&1}", &1}) |> Map.new()
+
+      assert <<0xDA, 0xD0, 0x85, _::binary>> = EncoderV1.encode_map(map, 1)
+    end
+  end
 end

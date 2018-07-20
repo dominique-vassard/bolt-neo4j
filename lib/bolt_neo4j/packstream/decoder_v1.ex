@@ -22,6 +22,11 @@ defmodule BoltNeo4j.Packstream.DecoderV1 do
   @string16_marker 0xD1
   @string32_marker 0xD2
 
+  @tiny_map_marker 0xA
+  @map8_marker 0xD8
+  @map16_marker 0xD9
+  @map32_marker 0xDA
+
   def decode(<<0x0>>, _), do: []
   def decode("", _), do: []
 
@@ -78,6 +83,23 @@ defmodule BoltNeo4j.Packstream.DecoderV1 do
     [Decoder.decode(rest, version)]
   end
 
+  # Decode maps
+  def decode(<<@tiny_map_marker::4, _nb_entries::4, rest::binary>>, version) do
+    [decode_map(rest, version)]
+  end
+
+  def decode(<<@map8_marker, _nb_entries::8, rest::binary>>, version) do
+    [decode_map(rest, version)]
+  end
+
+  def decode(<<@map16_marker, _nb_entries::8, rest::binary>>, version) do
+    [decode_map(rest, version)]
+  end
+
+  def decode(<<@map32_marker, _nb_entries::8, rest::binary>>, version) do
+    [decode_map(rest, version)]
+  end
+
   # Decode integers
   def decode(<<@int8_marker, int::signed-integer, rest::binary>>, version) do
     [int | Decoder.decode(rest, version)]
@@ -102,5 +124,12 @@ defmodule BoltNeo4j.Packstream.DecoderV1 do
   defp decode_string(data, str_length, version) do
     <<str::binary-size(str_length), rest::binary>> = data
     [str | Decoder.decode(rest, version)]
+  end
+
+  defp decode_map(data, version) do
+    Decoder.decode(data, version)
+    |> Enum.chunk_every(2)
+    |> Enum.map(&List.to_tuple/1)
+    |> Map.new()
   end
 end
