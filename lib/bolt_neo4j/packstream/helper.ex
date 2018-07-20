@@ -1,11 +1,9 @@
 defmodule BoltNeo4j.Packstream.Helper do
-  @available_version [1, 2]
-
   @doc """
   Retrieve previous version
   """
-  def previous_version(version) do
-    @available_version
+  def previous_version(version, available_versions) do
+    available_versions
     |> Enum.take_while(&(&1 < version))
     |> List.last()
   end

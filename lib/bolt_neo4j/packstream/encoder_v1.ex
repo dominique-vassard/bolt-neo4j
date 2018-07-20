@@ -79,6 +79,8 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
   end
 
   defp encode_list_data(data, version) do
+    IO.puts("Encode in version #{version}")
+
     data
     |> Enum.into(<<>>, &BoltNeo4j.Packstream.Encoder.encode(&1, version))
   end
