@@ -69,17 +69,48 @@ defmodule BoltNeo4j.Packstream.DecoderV1Test do
 
       assert [[1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]] = res
     end
+
+    test "list16" do
+      original = Enum.into(1..258, [])
+      encoded = EncoderV1.encode_list(original, 1)
+      assert [^original] = DecoderV1.decode(encoded, 1)
+    end
+
+    test "list32" do
+      original = Enum.into(1..66_000, [])
+      encoded = EncoderV1.encode_list(original, 1)
+      assert [^original] = DecoderV1.decode(encoded, 1)
+    end
   end
 
-  test "list16" do
-    original = Enum.into(1..258, [])
-    encoded = EncoderV1.encode_list(original, 1)
-    assert original = DecoderV1.decode(encoded, 1)
-  end
+  describe "Decode strings:" do
+    test "Empty string" do
+      assert [""] = DecoderV1.decode(<<0x80>>, 1)
+    end
 
-  test "list32" do
-    original = Enum.into(1..66_000, [])
-    encoded = EncoderV1.encode_list(original, 1)
-    assert original = DecoderV1.decode(encoded, 1)
+    test "Tiny string" do
+      assert ["hello"] = DecoderV1.decode(<<0x85, 0x68, 0x65, 0x6C, 0x6C, 0x6F>>, 1)
+    end
+
+    test "String8" do
+      assert ["âme à écorchure"] =
+               DecoderV1.decode(
+                 <<0xD0, 0x12, 0xC3, 0xA2, 0x6D, 0x65, 0x20, 0xC3, 0xA0, 0x20, 0xC3, 0xA9, 0x63,
+                   0x6F, 0x72, 0x63, 0x68, 0x75, 0x72, 0x65>>,
+                 1
+               )
+    end
+
+    test "String16" do
+      original = String.duplicate("a", 258)
+      encoded = EncoderV1.encode_string(original)
+      assert [^original] = DecoderV1.decode(encoded, 1)
+    end
+
+    test "String32" do
+      original = String.duplicate("a", 66_000)
+      encoded = EncoderV1.encode_string(original)
+      assert [^original] = DecoderV1.decode(encoded, 1)
+    end
   end
 end

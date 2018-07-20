@@ -15,6 +15,11 @@ defmodule BoltNeo4j.Packstream.DecoderV1 do
   @list16_marker 0xD5
   @list32_marker 0xD6
 
+  @tiny_string_marker 0x8
+  @string8_marker 0xD0
+  @string16_marker 0xD1
+  @string32_marker 0xD2
+
   @doc """
   Decode atoms
   """
@@ -28,6 +33,22 @@ defmodule BoltNeo4j.Packstream.DecoderV1 do
 
   def decode(<<@false_marker, rest::binary>>, version) do
     [false | Decoder.decode(rest, version)]
+  end
+
+  def decode(<<@tiny_string_marker::4, str_length::4, data::binary>>, version) do
+    decode_string(data, str_length, version)
+  end
+
+  def decode(<<@string8_marker, str_length::8, data::binary>>, version) do
+    decode_string(data, str_length, version)
+  end
+
+  def decode(<<@string16_marker, str_length::16, data::binary>>, version) do
+    decode_string(data, str_length, version)
+  end
+
+  def decode(<<@string32_marker, str_length::32, data::binary>>, version) do
+    decode_string(data, str_length, version)
   end
 
   # Decode lists
@@ -69,5 +90,10 @@ defmodule BoltNeo4j.Packstream.DecoderV1 do
 
   def decode(<<int::signed-integer, rest::binary>>, version) do
     [int | Decoder.decode(rest, version)]
+  end
+
+  defp decode_string(data, str_length, version) do
+    <<str::binary-size(str_length), rest::binary>> = data
+    [str | Decoder.decode(rest, version)]
   end
 end

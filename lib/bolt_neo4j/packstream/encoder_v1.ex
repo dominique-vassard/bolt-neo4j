@@ -22,6 +22,11 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
   @list16_marker 0xD5
   @list32_marker 0xD6
 
+  @tiny_string_marker 0x8
+  @string8_marker 0xD0
+  @string16_marker 0xD1
+  @string32_marker 0xD2
+
   @doc """
   Encode atoms
 
@@ -31,6 +36,47 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
   def encode_atom(nil), do: <<@null_marker>>
   def encode_atom(true), do: <<@true_marker>>
   def encode_atom(false), do: <<@false_marker>>
+
+  def encode_string(str) when byte_size(str) < 16 do
+    <<@tiny_string_marker::4, byte_size(str)::4, (str <> <<>>)>>
+  end
+
+  def encode_string(str) when byte_size(str) < 256 do
+    <<@string8_marker, byte_size(str)::8, (str <> <<>>)>>
+  end
+
+  def encode_string(str) when byte_size(str) < 65_536 do
+    <<@string16_marker, byte_size(str)::16, (str <> <<>>)>>
+  end
+
+  def encode_string(str) when byte_size(str) < 4_294_967_295 do
+    <<@string32_marker, byte_size(str)::32, (str <> <<>>)>>
+  end
+
+  def encode_string(_) do
+    {:error, "String too long"}
+  end
+
+  # List encoding
+  def encode_list(list, version) when length(list) < 16 do
+    <<@tiny_list_marker::4, length(list)::4>> <> encode_list_data(list, version)
+  end
+
+  def encode_list(list, version) when length(list) < 256 do
+    <<@list8_marker, length(list)::8, encode_list_data(list, version)::binary>>
+  end
+
+  def encode_list(list, version) when length(list) < 65_536 do
+    <<@list16_marker, length(list)::16, encode_list_data(list, version)::binary>>
+  end
+
+  def encode_list(list, version) when length(list) < 4_294_967_295 do
+    <<@list32_marker, length(list)::32, encode_list_data(list, version)::binary>>
+  end
+
+  def encode_list(_, _) do
+    {:error, "List too long"}
+  end
 
   # Integer encoding
   def encode_integer(int) when int in @int do
@@ -57,30 +103,7 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
     {:error, "Integer out of range"}
   end
 
-  # List encoding
-  def encode_list(list, version) when length(list) < 16 do
-    <<@tiny_list_marker::4, length(list)::4>> <> encode_list_data(list, version)
-  end
-
-  def encode_list(list, version) when length(list) < 256 do
-    <<@list8_marker, length(list)::8, encode_list_data(list, version)::binary>>
-  end
-
-  def encode_list(list, version) when length(list) < 65_536 do
-    <<@list16_marker, length(list)::16, encode_list_data(list, version)::binary>>
-  end
-
-  def encode_list(list, version) when length(list) < 4_294_967_295 do
-    <<@list32_marker, length(list)::32, encode_list_data(list, version)::binary>>
-  end
-
-  def encode_list(_, _) do
-    {:error, "List too long"}
-  end
-
   defp encode_list_data(data, version) do
-    IO.puts("Encode in version #{version}")
-
     data
     |> Enum.into(<<>>, &BoltNeo4j.Packstream.Encoder.encode(&1, version))
   end
