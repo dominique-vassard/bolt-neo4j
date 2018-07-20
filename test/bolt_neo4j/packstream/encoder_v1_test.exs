@@ -124,4 +124,16 @@ defmodule BoltNeo4j.Packstream.EncoderV1Test do
                EncoderV1.encode_string(String.duplicate("a", 66_000))
     end
   end
+
+  describe "Encode floats:" do
+    test "Positive float" do
+      assert <<0xC1, 0x3F, 0xF1, 0x99, 0x99, 0x99, 0x99, 0x99, 0x9A>> =
+               EncoderV1.encode_float(1.1)
+    end
+
+    test "Negative float" do
+      assert <<0xC1, 0xBF, 0xF1, 0x99, 0x99, 0x99, 0x99, 0x99, 0x9A>> =
+               EncoderV1.encode_float(-1.1)
+    end
+  end
 end

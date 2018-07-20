@@ -17,6 +17,8 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
   @int64_low -9_223_372_036_854_775_808..-2_147_483_649
   @int64_high 2_147_483_648..9_223_372_036_854_775_807
 
+  @float_marker 0xC1
+
   @tiny_list_marker 0x9
   @list8_marker 0xD4
   @list16_marker 0xD5
@@ -76,6 +78,11 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
 
   def encode_list(_, _) do
     {:error, "List too long"}
+  end
+
+  # Float encoding
+  def encode_float(number) do
+    <<@float_marker, number::float>>
   end
 
   # Integer encoding

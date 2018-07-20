@@ -113,4 +113,15 @@ defmodule BoltNeo4j.Packstream.DecoderV1Test do
       assert [^original] = DecoderV1.decode(encoded, 1)
     end
   end
+
+  describe "Decode floats:" do
+    test "Positive float" do
+      assert [1.1] = DecoderV1.decode(<<0xC1, 0x3F, 0xF1, 0x99, 0x99, 0x99, 0x99, 0x99, 0x9A>>, 1)
+    end
+
+    test "Negative float" do
+      assert [-1.1] =
+               DecoderV1.decode(<<0xC1, 0xBF, 0xF1, 0x99, 0x99, 0x99, 0x99, 0x99, 0x9A>>, 1)
+    end
+  end
 end

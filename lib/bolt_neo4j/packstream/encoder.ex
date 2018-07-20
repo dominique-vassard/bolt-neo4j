@@ -30,6 +30,12 @@ defimpl BoltNeo4j.Packstream.Encoder, for: BitString do
   end
 end
 
+defimpl BoltNeo4j.Packstream.Encoder, for: Float do
+  def encode(data, version) do
+    EncoderHelper.call_encode(:float, data, version)
+  end
+end
+
 defimpl BoltNeo4j.Packstream.Encoder, for: Any do
   def encode(_, version) do
     {:error, "Type not supported in version #{version}"}
