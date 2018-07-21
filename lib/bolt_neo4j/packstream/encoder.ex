@@ -43,6 +43,10 @@ defimpl BoltNeo4j.Packstream.Encoder, for: Map do
 end
 
 defimpl BoltNeo4j.Packstream.Encoder, for: Any do
+  def encode({_signature, %{__struct__: _}} = data, signature, version) do
+    EncoderHelper.call_encode(:struct, data, version)
+  end
+
   def encode(_, version) do
     {:error, "Type not supported in version #{version}"}
   end

@@ -1,6 +1,10 @@
 defmodule BoltNeo4j.Packstream.EncoderV1Test do
   use ExUnit.Case
 
+  defmodule TestStruct do
+    defstruct [:id, :value]
+  end
+
   alias BoltNeo4j.Packstream.EncoderV1
 
   describe "Encode Atoms:" do
@@ -184,6 +188,14 @@ defmodule BoltNeo4j.Packstream.EncoderV1Test do
       map = 1..66_000 |> Enum.map(&{"a#{&1}", &1}) |> Map.new()
 
       assert <<0xDA, 0xD0, 0x85, _::binary>> = EncoderV1.encode_map(map, 1)
+    end
+  end
+
+  describe "Encode structures:" do
+    test "Tiny structure with signature 0x01" do
+      assert <<0xB3, 0x1, 0xA2, 0x82, 0x69, 0x64, 0x1, 0x85, 0x76, 0x61, 0x6C, 0x75, 0x65, 0x85,
+               0x68, 0x65, 0x6C, 0x6C,
+               0x6F>> = EncoderV1.encode_struct(%TestStruct{id: 1, value: "hello"}, 0x01, 1)
     end
   end
 end

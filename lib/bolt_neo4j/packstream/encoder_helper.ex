@@ -47,6 +47,11 @@ defmodule BoltNeo4j.Packstream.EncoderHelper do
     Kernel.apply(module, func_atom, [data, version])
   end
 
+  defp do_call(data_type, module, func_atom, {signature, data}, version)
+       when data_type in [:struct] do
+    Kernel.apply(module, func_atom, [data, signature, version])
+  end
+
   defp do_call(_, module, func_atom, data, _) do
     Kernel.apply(module, func_atom, [data])
   end

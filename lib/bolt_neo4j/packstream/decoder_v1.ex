@@ -27,6 +27,10 @@ defmodule BoltNeo4j.Packstream.DecoderV1 do
   @map16_marker 0xD9
   @map32_marker 0xDA
 
+  @tiny_struct_marker 0xB
+  @struct8_marker 0xDC
+  @struct16_marker 0xDD
+
   def decode(<<0x0>>, _), do: []
   def decode("", _), do: []
 
@@ -98,6 +102,19 @@ defmodule BoltNeo4j.Packstream.DecoderV1 do
 
   def decode(<<@map32_marker, _nb_entries::8, rest::binary>>, version) do
     [decode_map(rest, version)]
+  end
+
+  # Decode structs
+  def decode(<<@tiny_struct_marker::4, _struct_size::4, signature::8, struct::binary>>, version) do
+    [[sig: signature, fields: Decoder.decode(struct, version)]]
+  end
+
+  def decode(<<@struct8_marker, _struct_size::8, signature::8, struct::binary>>, version) do
+    [[sig: signature, fields: Decoder.decode(struct, version)]]
+  end
+
+  def decode(<<@struct16_marker, _struct_size::16, signature::8, struct::binary>>, version) do
+    [[sig: signature, fields: Decoder.decode(struct, version)]]
   end
 
   # Decode integers

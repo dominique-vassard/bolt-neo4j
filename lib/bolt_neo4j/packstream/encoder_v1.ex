@@ -36,6 +36,10 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
   @map16_marker 0xD9
   @map32_marker 0xDA
 
+  @tiny_struct_marker 0xB
+  @struct8_marker 0xDC
+  @struct16_marker 0xDD
+
   @doc """
   Encode atoms
 
@@ -108,6 +112,26 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
 
   def encode_map(map, version) when map_size(map) < 4_294_967_295 do
     <<@map32_marker, map_size(map)::8>> <> encode_map_data(map, version)
+  end
+
+  # Structure encoding
+  def encode_struct(struct, signature, version) when map_size(struct) < 16 do
+    <<@tiny_struct_marker::4, map_size(struct)::4, signature>> <>
+      encode_map(Map.from_struct(struct), version)
+  end
+
+  def encode_struct(struct, signature, version) when map_size(struct) < 256 do
+    <<@struct8_marker, map_size(struct)::8, signature>> <>
+      encode_map(Map.from_struct(struct), version)
+  end
+
+  def encode_struct(struct, signature, version) when map_size(struct) < 65_536 do
+    <<@struct16_marker, map_size(struct)::16, signature>> <>
+      encode_map(Map.from_struct(struct), version)
+  end
+
+  def encode_struct(_, _, _) do
+    {:error, "Struct too big"}
   end
 
   # Integer encoding

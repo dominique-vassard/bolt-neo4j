@@ -1,6 +1,7 @@
 defmodule BoltNeo4j.Packstream.DecoderV1Test do
   use ExUnit.Case
 
+  alias BoltNeo4j.Packstream.Encoder
   alias BoltNeo4j.Packstream.EncoderV1
   alias BoltNeo4j.Packstream.DecoderV1
 
@@ -178,6 +179,35 @@ defmodule BoltNeo4j.Packstream.DecoderV1Test do
       encoded = EncoderV1.encode_map(original, 1)
       res = DecoderV1.decode(encoded, 1)
       assert res |> List.first() |> map_size() == 66_000
+    end
+  end
+
+  describe "Decode structures:" do
+    test "Empty structure ith signature 0x01" do
+      assert [[sig: 1, fields: []]] = DecoderV1.decode(<<0xB0, 0x01>>, 1)
+    end
+
+    test "Tiny structure with signature 0x01" do
+      assert [[sig: 1, fields: [%{"id" => 1, "value" => "hello"}]]] =
+               DecoderV1.decode(
+                 <<0xB3, 0x1, 0xA2, 0x82, 0x69, 0x64, 0x1, 0x85, 0x76, 0x61, 0x6C, 0x75, 0x65,
+                   0x85, 0x68, 0x65, 0x6C, 0x6C, 0x6F>>,
+                 1
+               )
+    end
+
+    test "Struct8 with ignaturre 0x02" do
+      struct =
+        <<0xDC, 111::8, 0x03>> <> (1..111 |> Enum.map(&Encoder.encode(&1, 1)) |> Enum.join())
+
+      assert [[sig: 3, fields: Enum.to_list(1..111)]] == DecoderV1.decode(struct, 1)
+    end
+
+    test "Struct16 with ignaturre 0x03" do
+      struct_16 =
+        <<0xDD, 256::16, 0x03>> <> (1..256 |> Enum.map(&Encoder.encode(&1, 1)) |> Enum.join())
+
+      assert [[sig: 3, fields: Enum.to_list(1..256)]] == DecoderV1.decode(struct_16, 1)
     end
   end
 end
