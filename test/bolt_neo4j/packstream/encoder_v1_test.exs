@@ -197,5 +197,20 @@ defmodule BoltNeo4j.Packstream.EncoderV1Test do
                0x68, 0x65, 0x6C, 0x6C,
                0x6F>> = EncoderV1.encode_struct(%TestStruct{id: 1, value: "hello"}, 0x01, 1)
     end
+
+    test "Tiny structure with list" do
+      assert <<0xB2, 0x1, 0x8C, 0x42, 0x6F, 0x6C, 0x74, 0x4E, 0x65, 0x6F, 0x34, 0x2F, 0x30, 0x2E,
+               0x31, 0xA0>> = EncoderV1.encode_struct(["BoltNeo4/0.1", %{}], 0x01, 1)
+    end
+
+    test "Struct8 with list" do
+      res = EncoderV1.encode_struct(Enum.into(1..111, []), 0x01, 1)
+      assert <<0xDC, 0x6F, _::binary>> = res
+    end
+
+    test "Struct16 with list" do
+      res = EncoderV1.encode_struct(Enum.into(1..333, []), 0x01, 1)
+      assert <<0xDD, 0x1, 0x4D, _::binary>> = res
+    end
   end
 end

@@ -1,21 +1,34 @@
 defmodule BoltNeo4j.Packstream.EncoderTest do
   use ExUnit.Case
 
-  alias BoltNeo4j.Packstream.Encoder
+  alias BoltNeo4j.Packstream.{Encoder, EncoderHelper}
+  alias BoltNeo4j.Packstream.Message.Init
+
+  defmodule TestStruct do
+    defstruct [:id, :value]
+  end
 
   test "Encode nil in v1" do
     assert <<0xC0>> = Encoder.encode(nil)
   end
 
   test "Encode nil in v2" do
-    assert <<0xC0>> = Encoder.encode(nil, 2)
+    assert {:error, _} = Encoder.encode(nil, 2)
   end
 
-  test "Encode tiny list in v1" do
-    assert <<0x94, 0x1, 0x2, 0x3, 0x4>> = Encoder.encode([1, 2, 3, 4])
-  end
+  test "Encode all common types" do
+    Enum.each(EncoderHelper.available_versions(), fn version ->
+      assert <<_::binary>> = Encoder.encode(true, version)
+      assert <<_::binary>> = Encoder.encode(7, version)
+      assert <<_::binary>> = Encoder.encode(7.7, version)
+      assert <<_::binary>> = Encoder.encode("hello", version)
+      assert <<_::binary>> = Encoder.encode([], version)
+      assert <<_::binary>> = Encoder.encode([2, 4], version)
+      assert <<_::binary>> = Encoder.encode(%{ok: 5}, version)
+      assert <<_::binary>> = Encoder.encode({0x01, %TestStruct{id: 1, value: "hello"}}, version)
 
-  test "Encode tiny list in v2" do
-    assert <<0x94, 0x1, 0x2, 0x3, 0x4>> = Encoder.encode([1, 2, 3, 4], 2)
+      assert <<_::binary>> =
+               Encoder.encode(%Init{client_name: "MyClient/1.0", auth_token: %{}}, version)
+    end)
   end
 end

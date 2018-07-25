@@ -4,6 +4,13 @@ defmodule BoltNeo4j.Packstream.EncoderHelper do
   @available_versions [1]
 
   @doc """
+  Retrieves availble encoder version numbers
+  """
+  def available_versions() do
+    @available_versions
+  end
+
+  @doc """
   Call the right 'encode' function depending on the given version.
 
   If version is nil, it's an error.
@@ -43,7 +50,7 @@ defmodule BoltNeo4j.Packstream.EncoderHelper do
     end
   end
 
-  defp do_call(data_type, module, func_atom, data, version) when data_type in [:list] do
+  defp do_call(data_type, module, func_atom, data, version) when data_type in [:list, :map] do
     Kernel.apply(module, func_atom, [data, version])
   end
 

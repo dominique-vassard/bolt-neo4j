@@ -115,19 +115,33 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
   end
 
   # Structure encoding
-  def encode_struct(struct, signature, version) when map_size(struct) < 16 do
+  def encode_struct(struct, signature, version) when is_map(struct) and map_size(struct) < 16 do
     <<@tiny_struct_marker::4, map_size(struct)::4, signature>> <>
       encode_map(Map.from_struct(struct), version)
   end
 
-  def encode_struct(struct, signature, version) when map_size(struct) < 256 do
+  def encode_struct(struct, signature, version) when is_map(struct) and map_size(struct) < 256 do
     <<@struct8_marker, map_size(struct)::8, signature>> <>
       encode_map(Map.from_struct(struct), version)
   end
 
-  def encode_struct(struct, signature, version) when map_size(struct) < 65_536 do
+  def encode_struct(struct, signature, version)
+      when is_map(struct) and map_size(struct) < 65_536 do
     <<@struct16_marker, map_size(struct)::16, signature>> <>
       encode_map(Map.from_struct(struct), version)
+  end
+
+  def encode_struct(list, signature, version) when is_list(list) and length(list) < 16 do
+    <<@tiny_struct_marker::4, length(list)::4, signature>> <>
+      (list |> Enum.map_join("", &Encoder.encode(&1, version)))
+  end
+
+  def encode_struct(list, signature, version) when is_list(list) and length(list) < 256 do
+    <<@struct8_marker, length(list)::8, signature>> <> encode_struct_list(list, version)
+  end
+
+  def encode_struct(list, signature, version) when is_list(list) and length(list) < 65_535 do
+    <<@struct16_marker, length(list)::16, signature>> <> encode_struct_list(list, version)
   end
 
   def encode_struct(_, _, _) do
@@ -167,5 +181,10 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
   defp encode_map_data(data, version) do
     data
     |> Enum.map_join(fn {k, v} -> Encoder.encode(k, version) <> Encoder.encode(v, version) end)
+  end
+
+  defp encode_struct_list(data, version) do
+    data
+    |> Enum.map_join("", &Encoder.encode(&1, version))
   end
 end

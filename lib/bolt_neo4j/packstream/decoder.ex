@@ -4,6 +4,13 @@ defmodule BoltNeo4j.Packstream.Decoder do
   @available_versions [1, 2]
 
   @doc """
+  Retrieves availble encoder version numbers
+  """
+  def available_versions() do
+    @available_versions
+  end
+
+  @doc """
   Call  'decode' function on the right module depending on the given version.
 
   If version is nil, it's an error.
@@ -43,5 +50,12 @@ defmodule BoltNeo4j.Packstream.Decoder do
       res ->
         res
     end
+  end
+
+  @success_signature 0x70
+  @tiny_struct_marker 0xB
+
+  def decode_message(<<@tiny_struct_marker::4, _::4, @success_signature, data::binary>>, version) do
+    {:success, List.first(decode(data, version))}
   end
 end
