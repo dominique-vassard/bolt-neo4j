@@ -3,7 +3,7 @@ defmodule BoltNeo4j.Bolt do
   alias BoltNeo4j.Packstream.Encoder
   alias BoltNeo4j.Packstream.Decoder
 
-  alias BoltNeo4j.Packstream.Message.{Init}
+  alias BoltNeo4j.Packstream.Message.{Init, AckFailure}
 
   @recv_timeout 10_000
 
@@ -117,6 +117,37 @@ defmodule BoltNeo4j.Bolt do
     end
   end
 
+  @doc """
+  Implementation of Bolt's ACK_FAILURE. It acknowledges a failure while keeping
+  transactions alive.
+
+  See http://boltprotocol.org/v1/#message-ack-failure
+
+  ## Options
+
+  See "Shared options" in the documentation of this module.
+  """
+  def ack_failure(transport, port, options \\ []) do
+    recv_timeout = get_recv_timeout(options)
+    version = get_protocol_version(options)
+
+    Logger.log_message(:client, :ack_failure, [])
+
+    data = Encoder.encode(%AckFailure{}, version)
+
+    Logger.log_message(:client, :ack_failure, data, :hex)
+
+    transport.send(port, data)
+
+    recv_data = receive_data(transport, port, recv_timeout, version)
+    Logger.log_message(:server, recv_data)
+
+    case recv_data do
+      {:success, data} -> {:ok, data}
+      {:failure, error} -> {:error, error}
+    end
+  end
+
   defp receive_data(transport, port, recv_timeout, version, responses \\ [])
 
   defp receive_data(transport, port, recv_timeout, version, responses) do
@@ -138,8 +169,8 @@ defmodule BoltNeo4j.Bolt do
             error
         end
 
-      {:error, _} ->
-        {:error, "Can't receive data."}
+      {:error, error} ->
+        {:error, error}
     end
   end
 

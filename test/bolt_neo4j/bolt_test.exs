@@ -6,7 +6,7 @@ defmodule BoltNeo4j.BoltTest do
   @host 'localhost'
   @port 7687
 
-  describe "Bolt.handshake/3:" do
+  describe "handshake/3:" do
     test "Valid for default version" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_)
@@ -23,7 +23,7 @@ defmodule BoltNeo4j.BoltTest do
     end
   end
 
-  describe "Bolt.init/3:" do
+  describe "init/4:" do
     test "ok" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
@@ -35,5 +35,17 @@ defmodule BoltNeo4j.BoltTest do
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
       assert {:error, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "wrong!"})
     end
+  end
+
+  # TEST TO BE DONE!
+  describe "ack_failure/3:" do
+    test "ok"
+    # test "ok" do
+    #   {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
+    #   assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
+    #   assert {:error, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "wrong!"})
+    #   assert {:ok, _} = Bolt.ack_failure(:gen_tcp, port_)
+    #   # assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
+    # end
   end
 end
