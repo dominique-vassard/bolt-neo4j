@@ -1,5 +1,5 @@
 defmodule BoltNeo4j.Bolt do
-  require Logger
+  alias BoltNeo4j.Logger
   alias BoltNeo4j.Packstream.Encoder
   alias BoltNeo4j.Packstream.Decoder
 
@@ -12,8 +12,6 @@ defmodule BoltNeo4j.Bolt do
   @fallback_protocol_version 1
   @min_version 1
   @max_version 2
-
-  @sig_init 0x01
 
   @moduledoc """
   This module handles the Bolt protocol specific steps (handshake, init) as well as sending and
@@ -52,24 +50,28 @@ defmodule BoltNeo4j.Bolt do
       ((version..0
         |> Enum.into([])) ++ [0, 0, 0])
       |> Enum.take(4)
-      |> Enum.into(<<>>, fn version_ -> <<version_::32>> end)
+
+    Logger.log_message(
+      :client,
+      :handshake,
+      "#{inspect(@handshake_preamble, base: :hex)} #{inspect(versions)}"
+    )
 
     # Send handshkake
-    data = @handshake_preamble <> versions
+    data = @handshake_preamble <> Enum.into(versions, <<>>, fn version_ -> <<version_::32>> end)
     transport.send(port, data)
 
-    Logger.debug(fn ->
-      "C: HANDSHAKE ~ #{inspect(data, base: :hex)}"
-    end)
+    # Logger.debug(fn ->
+    #   "C: HANDSHAKE ~ #{inspect(data, base: :hex)}"
+    # end)
 
     # Receive handshake
     case transport.recv(port, 4, recv_timeout) do
       {:ok, <<x::32>> = packet} when x <= @max_version ->
-        Logger.debug(fn -> "S: HANDSHAKE ~ #{inspect(packet, base: :hex)}" end)
+        Logger.log_message(:server, :handshake, packet)
         {:ok, version}
 
       {:error, _} ->
-        Logger.debug(fn -> "Couldn't handshake" end)
         {:error, "Couldn't handshake"}
     end
   end
@@ -97,18 +99,17 @@ defmodule BoltNeo4j.Bolt do
     recv_timeout = get_recv_timeout(options)
     version = get_protocol_version(options)
 
-    st = %Init{auth_token: map_auth}
+    init_struct = %Init{auth_token: map_auth}
+    Logger.log_message(:client, :init, init_struct)
 
-    data = Encoder.encode(st, version)
+    data = Encoder.encode(init_struct, version)
 
-    Logger.debug(fn ->
-      "C: INIT ~ #{inspect(data, base: :hex, limit: :infinity)}"
-    end)
+    # Logger.log_message(:client, :init, data, :hex)
 
     transport.send(port, data)
 
     recv_data = receive_data(transport, port, recv_timeout, version)
-    log_message(:server, recv_data)
+    Logger.log_message(:server, recv_data)
 
     case recv_data do
       {:success, data} -> {:ok, data}
@@ -173,15 +174,4 @@ defmodule BoltNeo4j.Bolt do
     do: {:ok, version}
 
   defp check_version(_), do: {:error, "Unsupported protocol version"}
-
-  defp log_message(from, {type, data}) do
-    from_txt =
-      case from do
-        :server -> "S"
-        :client -> "C"
-      end
-
-    msg_type = type |> Atom.to_string() |> String.upcase()
-    Logger.debug(fn -> "#{from_txt}: #{msg_type} ~ #{inspect(data)}" end)
-  end
 end
