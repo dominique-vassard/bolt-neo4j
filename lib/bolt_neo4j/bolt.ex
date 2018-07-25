@@ -107,10 +107,13 @@ defmodule BoltNeo4j.Bolt do
 
     transport.send(port, data)
 
-    {signature, info} = receive_data(transport, port, recv_timeout, version)
-    log_message(:server, signature, info)
+    recv_data = receive_data(transport, port, recv_timeout, version)
+    log_message(:server, recv_data)
 
-    {:ok, info}
+    case recv_data do
+      {:success, data} -> {:ok, data}
+      {:failure, error} -> {:error, error}
+    end
   end
 
   defp receive_data(transport, port, recv_timeout, version, responses \\ [])
@@ -171,7 +174,7 @@ defmodule BoltNeo4j.Bolt do
 
   defp check_version(_), do: {:error, "Unsupported protocol version"}
 
-  defp log_message(from, type, data) do
+  defp log_message(from, {type, data}) do
     from_txt =
       case from do
         :server -> "S"

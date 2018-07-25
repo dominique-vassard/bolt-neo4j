@@ -53,9 +53,20 @@ defmodule BoltNeo4j.Packstream.Decoder do
   end
 
   @success_signature 0x70
+  @failure_signature 0x7F
   @tiny_struct_marker 0xB
 
+  @doc """
+  Decode SUCCESS message
+  """
   def decode_message(<<@tiny_struct_marker::4, _::4, @success_signature, data::binary>>, version) do
     {:success, List.first(decode(data, version))}
+  end
+
+  @doc """
+  Decode FAILURE message
+  """
+  def decode_message(<<@tiny_struct_marker::4, _::4, @failure_signature, data::binary>>, version) do
+    {:failure, List.first(decode(data, version))}
   end
 end

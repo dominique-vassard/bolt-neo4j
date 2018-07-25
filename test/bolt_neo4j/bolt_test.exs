@@ -29,5 +29,11 @@ defmodule BoltNeo4j.BoltTest do
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
       assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
     end
+
+    test "invalid auth" do
+      {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
+      assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
+      assert {:error, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "wrong!"})
+    end
   end
 end
