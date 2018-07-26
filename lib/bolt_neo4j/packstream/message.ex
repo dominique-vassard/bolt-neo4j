@@ -55,3 +55,55 @@ defmodule BoltNeo4j.Packstream.Message.AckFailure do
     []
   end
 end
+
+defmodule BoltNeo4j.Packstream.Message.Run do
+  @moduledoc """
+  This module holds data and functions required for RUN message
+  """
+
+  @behaviour BoltNeo4j.Packstream.Message
+
+  @signature 0x10
+
+  defstruct [:statement, :parameters]
+
+  @doc """
+  Returns the RUN message signature
+  """
+  def signature() do
+    @signature
+  end
+
+  @doc """
+  Build a list of data from Run structure
+  """
+  def list_data(%{statement: statement, parameters: parameters}) do
+    [statement, parameters]
+  end
+end
+
+defmodule BoltNeo4j.Packstream.Message.PullAll do
+  @moduledoc """
+  This module holds data and functions required for PULL_ALL message
+  """
+
+  @behaviour BoltNeo4j.Packstream.Message
+
+  @signature 0x3F
+
+  defstruct []
+
+  @doc """
+  Returns the PULL_ALL message signature
+  """
+  def signature() do
+    @signature
+  end
+
+  @doc """
+  Build a list of data from PullAll structure
+  """
+  def list_data(_) do
+    []
+  end
+end

@@ -2,7 +2,7 @@ defmodule BoltNeo4j.Packstream.EncoderTest do
   use ExUnit.Case
 
   alias BoltNeo4j.Packstream.{Encoder, EncoderHelper}
-  alias BoltNeo4j.Packstream.Message.{Init, AckFailure}
+  alias BoltNeo4j.Packstream.Message.{AckFailure, Init, PullAll, Run}
 
   defmodule TestStruct do
     defstruct [:id, :value]
@@ -27,10 +27,15 @@ defmodule BoltNeo4j.Packstream.EncoderTest do
       assert <<_::binary>> = Encoder.encode(%{ok: 5}, version)
       assert <<_::binary>> = Encoder.encode({0x01, %TestStruct{id: 1, value: "hello"}}, version)
 
+      assert <<_::binary>> = Encoder.encode(%AckFailure{}, version)
+
       assert <<_::binary>> =
                Encoder.encode(%Init{client_name: "MyClient/1.0", auth_token: %{}}, version)
 
-      assert <<_::binary>> = Encoder.encode(%AckFailure{}, version)
+      assert <<_::binary>> = Encoder.encode(%PullAll{}, version)
+
+      assert <<_::binary>> =
+               Encoder.encode(%Run{statement: "RETURN 1 AS num", parameters: %{}}, version)
     end)
   end
 end

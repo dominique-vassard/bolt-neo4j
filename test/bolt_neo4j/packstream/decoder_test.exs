@@ -53,6 +53,8 @@ defmodule BoltNeo4j.Packstream.DecoderTest do
          }}
 
       assert ^failure = Decoder.decode_message(failure_hex, version)
+
+      assert [[sig: 113, fields: [[1]]]] = Decoder.decode(<<0xB1, 0x71, 0x91, 0x1>>, version)
     end)
   end
 end

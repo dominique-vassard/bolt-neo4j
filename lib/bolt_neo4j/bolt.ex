@@ -3,7 +3,7 @@ defmodule BoltNeo4j.Bolt do
   alias BoltNeo4j.Packstream.Encoder
   alias BoltNeo4j.Packstream.Decoder
 
-  alias BoltNeo4j.Packstream.Message.{Init, AckFailure}
+  alias BoltNeo4j.Packstream.Message.{AckFailure, Init, PullAll, Run}
 
   @recv_timeout 10_000
 
@@ -144,6 +144,102 @@ defmodule BoltNeo4j.Bolt do
 
     case recv_data do
       {:success, data} -> {:ok, data}
+      {:failure, error} -> {:error, error}
+    end
+  end
+
+  @doc """
+  Implementation of Bolt's RUN. It passes a statement for execution on the server
+
+  See http://boltprotocol.org/v1/#message-run
+
+  ## Options
+
+  See "Shared options" in the documentation of this module.
+  """
+  def run(transport, port, statement, parameters \\ %{}, options \\ []) do
+    recv_timeout = get_recv_timeout(options)
+    version = get_protocol_version(options)
+
+    run_struct = %Run{statement: statement, parameters: parameters}
+
+    Logger.log_message(:client, :run, run_struct)
+
+    data = Encoder.encode(run_struct, version)
+
+    Logger.log_message(:client, :run, data)
+    Logger.log_message(:client, :run, data, :hex)
+
+    transport.send(port, data)
+
+    recv_data = receive_data(transport, port, recv_timeout, version)
+    Logger.log_message(:server, recv_data)
+
+    case recv_data do
+      {:success, data} -> {:ok, data}
+      {:failure, error} -> {:error, error}
+    end
+  end
+
+  @doc """
+  Implementation of Bolt's PULL_ALL. It retrieves all remaining items from the active result
+  stream.
+
+  See http://boltprotocol.org/v1/#message-pull-all
+
+  ## Options
+
+  See "Shared options" in the documentation of this module.
+  """
+  def pull_all(transport, port, options \\ []) do
+    version = get_protocol_version(options)
+
+    Logger.log_message(:client, :pull_all, [])
+
+    data = Encoder.encode(%PullAll{}, version)
+
+    transport.send(port, data)
+
+    receive_records(transport, port, [], options)
+  end
+
+  @doc """
+  Runs a statement (most likely Cypher statement) and returns a list of the
+  records and a summary.
+
+  Records are represented using PackStream's record data type. Their Elixir
+  representation is a Keyword with the indexse `:sig` and `:fields`.
+
+  ## Options
+
+  See "Shared options" in the documentation of this module.
+
+  ## Examples
+
+      iex> Boltex.Bolt.run_statement("MATCH (n) RETURN n")
+      [
+        {:success, %{"fields" => ["n"]}},
+        {:record, [sig: 1, fields: [1, "Example", "Labels", %{"some_attribute" => "some_value"}]]},
+        {:success, %{"type" => "r"}}
+      ]
+  """
+  def run_statement(transport, port, statement, parameters \\ %{}, options \\ []) do
+    with {:ok, success} = run(transport, port, statement, parameters, options),
+         {:ok, records} = pull_all(transport, port, options) do
+      [{:success, success} | records]
+    end
+  end
+
+  defp receive_records(transport, port, records, options) do
+    recv_timeout = get_recv_timeout(options)
+    version = get_protocol_version(options)
+
+    recv_data = receive_data(transport, port, recv_timeout, version)
+    Logger.log_message(:server, recv_data)
+
+    case recv_data do
+      {:success, summary} -> {:ok, Enum.reverse([{:success, summary} | records])}
+      {:record, data} -> receive_records(transport, port, [{:record, data} | records], options)
       {:failure, error} -> {:error, error}
     end
   end
