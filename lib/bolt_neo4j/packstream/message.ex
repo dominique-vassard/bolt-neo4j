@@ -107,3 +107,55 @@ defmodule BoltNeo4j.Packstream.Message.PullAll do
     []
   end
 end
+
+defmodule BoltNeo4j.Packstream.Message.DiscardAll do
+  @moduledoc """
+  This module holds data and functions required for DISCARD_ALL message
+  """
+
+  @behaviour BoltNeo4j.Packstream.Message
+
+  @signature 0x2F
+
+  defstruct []
+
+  @doc """
+  Returns the DISCARD_ALL message signature
+  """
+  def signature() do
+    @signature
+  end
+
+  @doc """
+  Build a list of data from DiscardAll structure
+  """
+  def list_data(_) do
+    []
+  end
+end
+
+defmodule BoltNeo4j.Packstream.Message.Reset do
+  @moduledoc """
+  This module holds data and functions required for RESET message
+  """
+
+  @behaviour BoltNeo4j.Packstream.Message
+
+  @signature 0x0F
+
+  defstruct []
+
+  @doc """
+  Returns the RESET message signature
+  """
+  def signature() do
+    @signature
+  end
+
+  @doc """
+  Build a list of data from Reset structure
+  """
+  def list_data(_) do
+    []
+  end
+end

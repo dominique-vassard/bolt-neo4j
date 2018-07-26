@@ -3,7 +3,7 @@ defmodule BoltNeo4j.Bolt do
   alias BoltNeo4j.Packstream.Encoder
   alias BoltNeo4j.Packstream.Decoder
 
-  alias BoltNeo4j.Packstream.Message.{AckFailure, Init, PullAll, Run}
+  alias BoltNeo4j.Packstream.Message.{AckFailure, DiscardAll, Init, PullAll, Reset, Run}
 
   @recv_timeout 10_000
 
@@ -204,6 +204,73 @@ defmodule BoltNeo4j.Bolt do
   end
 
   @doc """
+  Implementation of Bolt's PULL_ALL. It is used to discard all remaining items from the active
+  result stream
+
+  See http://boltprotocol.org/v1/#message-discard-all
+
+  ## Options
+
+  See "Shared options" in the documentation of this module.
+  """
+  def discard_all(transport, port, options \\ []) do
+    recv_timeout = get_recv_timeout(options)
+    version = get_protocol_version(options)
+
+    discard_all_struct = %DiscardAll{}
+
+    Logger.log_message(:client, :discard_all, discard_all_struct)
+
+    data = Encoder.encode(discard_all_struct, version)
+
+    Logger.log_message(:client, :discard_all, data)
+    Logger.log_message(:client, :discard_all, data, :hex)
+
+    transport.send(port, data)
+
+    recv_data = receive_data(transport, port, recv_timeout, version)
+    Logger.log_message(:server, recv_data)
+
+    case recv_data do
+      {:success, data} -> {:ok, data}
+      {:failure, error} -> {:error, error}
+    end
+  end
+
+  @doc """
+  Implementation of Bolt's RESET. It is used to return the current session to a "clean" state.
+
+  See http://boltprotocol.org/v1/#message-reset
+
+  ## Options
+
+  See "Shared options" in the documentation of this module.
+  """
+  def reset(transport, port, options \\ []) do
+    recv_timeout = get_recv_timeout(options)
+    version = get_protocol_version(options)
+
+    discard_all_struct = %Reset{}
+
+    Logger.log_message(:client, :reset, discard_all_struct)
+
+    data = Encoder.encode(discard_all_struct, version)
+
+    Logger.log_message(:client, :reset, data)
+    Logger.log_message(:client, :reset, data, :hex)
+
+    transport.send(port, data)
+
+    recv_data = receive_data(transport, port, recv_timeout, version)
+    Logger.log_message(:server, recv_data)
+
+    case recv_data do
+      {:success, data} -> {:ok, data}
+      {:failure, error} -> {:error, error}
+    end
+  end
+
+  @doc """
   Runs a statement (most likely Cypher statement) and returns a list of the
   records and a summary.
 
@@ -238,9 +305,17 @@ defmodule BoltNeo4j.Bolt do
     Logger.log_message(:server, recv_data)
 
     case recv_data do
-      {:success, summary} -> {:ok, Enum.reverse([{:success, summary} | records])}
-      {:record, data} -> receive_records(transport, port, [{:record, data} | records], options)
-      {:failure, error} -> {:error, error}
+      {:success, summary} ->
+        {:ok, Enum.reverse([{:success, summary} | records])}
+
+      {:record, data} ->
+        receive_records(transport, port, [{:record, data} | records], options)
+
+      {:failure, error} ->
+        {:error, error}
+
+      {:ignored, _} ->
+        {:error, "Session is in FAILURE state. Send ACK_FAILURE before going further"}
     end
   end
 

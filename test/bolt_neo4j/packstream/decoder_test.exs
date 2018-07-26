@@ -54,7 +54,9 @@ defmodule BoltNeo4j.Packstream.DecoderTest do
 
       assert ^failure = Decoder.decode_message(failure_hex, version)
 
-      assert [[sig: 113, fields: [[1]]]] = Decoder.decode(<<0xB1, 0x71, 0x91, 0x1>>, version)
+      assert {:record, [1]} = Decoder.decode_message(<<0xB1, 0x71, 0x91, 0x1>>, version)
+
+      assert {:ignored, _} = Decoder.decode_message(<<0xB0, 0x7E>>, version)
     end)
   end
 end

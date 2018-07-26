@@ -55,6 +55,7 @@ defmodule BoltNeo4j.Packstream.Decoder do
   @success_signature 0x70
   @failure_signature 0x7F
   @record_signature 0x71
+  @ignored_signature 0x7E
   @tiny_struct_marker 0xB
 
   @doc """
@@ -75,6 +76,13 @@ defmodule BoltNeo4j.Packstream.Decoder do
   Decode RECORD message
   """
   def decode_message(<<@tiny_struct_marker::4, _::4, @record_signature, data::binary>>, version) do
-    {:record, decode(data, version)}
+    {:record, List.first(decode(data, version))}
+  end
+
+  @doc """
+  Decode IGNORED message
+  """
+  def decode_message(<<@tiny_struct_marker::4, _::4, @ignored_signature, data::binary>>, version) do
+    {:ignored, List.first(decode(data, version))}
   end
 end

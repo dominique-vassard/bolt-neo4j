@@ -1,5 +1,5 @@
 alias BoltNeo4j.Packstream.EncoderHelper
-alias BoltNeo4j.Packstream.Message.{AckFailure, Init, PullAll, Run}
+alias BoltNeo4j.Packstream.Message.{AckFailure, DiscardAll, Init, PullAll, Reset, Run}
 
 require Logger
 
@@ -45,7 +45,7 @@ defimpl BoltNeo4j.Packstream.Encoder, for: Map do
   end
 end
 
-defimpl BoltNeo4j.Packstream.Encoder, for: [AckFailure, Init, PullAll, Run] do
+defimpl BoltNeo4j.Packstream.Encoder, for: [AckFailure, DiscardAll, Init, PullAll, Reset, Run] do
   @max_chunk_size 65_535
   @end_marker <<0x00, 0x00>>
 

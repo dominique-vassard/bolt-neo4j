@@ -1,7 +1,7 @@
 defmodule BoltNeo4j.Packstream.MessageTest do
   use ExUnit.Case
 
-  alias BoltNeo4j.Packstream.Message.{AckFailure, Init, PullAll, Run}
+  alias BoltNeo4j.Packstream.Message.{AckFailure, DiscardAll, Init, PullAll, Reset, Run}
 
   describe "Init module:" do
     test "signature/0" do
@@ -48,6 +48,26 @@ defmodule BoltNeo4j.Packstream.MessageTest do
 
     test "list_data/1" do
       assert [] = PullAll.list_data(%PullAll{})
+    end
+  end
+
+  describe "DiscardAll module:" do
+    test "signature/0" do
+      assert 0x2F = DiscardAll.signature()
+    end
+
+    test "list_data/1" do
+      assert [] = DiscardAll.list_data(%DiscardAll{})
+    end
+  end
+
+  describe "Reset module:" do
+    test "signature/0" do
+      assert 0x0F = Reset.signature()
+    end
+
+    test "list_data/1" do
+      assert [] = Reset.list_data(%Reset{})
     end
   end
 end
