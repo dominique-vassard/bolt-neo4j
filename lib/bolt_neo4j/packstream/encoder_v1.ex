@@ -107,11 +107,11 @@ defmodule BoltNeo4j.Packstream.EncoderV1 do
   end
 
   def encode_map(map, version) when map_size(map) < 65_536 do
-    <<@map16_marker, map_size(map)::8>> <> encode_map_data(map, version)
+    <<@map16_marker, map_size(map)::16>> <> encode_map_data(map, version)
   end
 
   def encode_map(map, version) when map_size(map) < 4_294_967_295 do
-    <<@map32_marker, map_size(map)::8>> <> encode_map_data(map, version)
+    <<@map32_marker, map_size(map)::32>> <> encode_map_data(map, version)
   end
 
   # Structure encoding

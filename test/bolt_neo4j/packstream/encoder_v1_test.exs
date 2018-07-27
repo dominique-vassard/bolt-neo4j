@@ -181,13 +181,13 @@ defmodule BoltNeo4j.Packstream.EncoderV1Test do
     test "Map16" do
       map = 1..258 |> Enum.map(&{"a#{&1}", &1}) |> Map.new()
 
-      assert <<0xD9, 0x2, 0x84, _::binary>> = EncoderV1.encode_map(map, 1)
+      assert <<0xD9, 0x1, 0x2, _::binary>> = EncoderV1.encode_map(map, 1)
     end
 
     test "Map32" do
       map = 1..66_000 |> Enum.map(&{"a#{&1}", &1}) |> Map.new()
 
-      assert <<0xDA, 0xD0, 0x85, _::binary>> = EncoderV1.encode_map(map, 1)
+      assert <<0xDA, 0x0, 0x1, 0x1, 0xD0, _::binary>> = EncoderV1.encode_map(map, 1)
     end
   end
 
