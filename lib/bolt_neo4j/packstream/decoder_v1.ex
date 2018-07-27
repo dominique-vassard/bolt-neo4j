@@ -71,50 +71,50 @@ defmodule BoltNeo4j.Packstream.DecoderV1 do
   end
 
   # Decode lists
-  def decode(<<@tiny_list_marker::4, _size::4, rest::binary>>, version) do
-    [Decoder.decode(rest, version)]
+  def decode(<<@tiny_list_marker::4, nb_items::4, rest::binary>>, version) do
+    decode_list(rest, nb_items, version)
   end
 
-  def decode(<<@list8_marker, _size::8, rest::binary>>, version) do
-    [Decoder.decode(rest, version)]
+  def decode(<<@list8_marker, nb_items::8, rest::binary>>, version) do
+    decode_list(rest, nb_items, version)
   end
 
-  def decode(<<@list16_marker, _size::16, rest::binary>>, version) do
-    [Decoder.decode(rest, version)]
+  def decode(<<@list16_marker, nb_items::16, rest::binary>>, version) do
+    decode_list(rest, nb_items, version)
   end
 
-  def decode(<<@list32_marker, _size::32, rest::binary>>, version) do
-    [Decoder.decode(rest, version)]
+  def decode(<<@list32_marker, nb_items::32, rest::binary>>, version) do
+    decode_list(rest, nb_items, version)
   end
 
   # Decode maps
-  def decode(<<@tiny_map_marker::4, _nb_entries::4, rest::binary>>, version) do
-    [decode_map(rest, version)]
+  def decode(<<@tiny_map_marker::4, nb_entries::4, rest::binary>>, version) do
+    decode_map(rest, nb_entries, version)
   end
 
-  def decode(<<@map8_marker, _nb_entries::8, rest::binary>>, version) do
-    [decode_map(rest, version)]
+  def decode(<<@map8_marker, nb_entries::8, rest::binary>>, version) do
+    decode_map(rest, nb_entries, version)
   end
 
-  def decode(<<@map16_marker, _nb_entries::8, rest::binary>>, version) do
-    [decode_map(rest, version)]
+  def decode(<<@map16_marker, nb_entries::16, rest::binary>>, version) do
+    decode_map(rest, nb_entries, version)
   end
 
-  def decode(<<@map32_marker, _nb_entries::8, rest::binary>>, version) do
-    [decode_map(rest, version)]
+  def decode(<<@map32_marker, nb_entries::32, rest::binary>>, version) do
+    decode_map(rest, nb_entries, version)
   end
 
   # Decode structs
-  def decode(<<@tiny_struct_marker::4, _struct_size::4, signature::8, struct::binary>>, version) do
-    [[sig: signature, fields: Decoder.decode(struct, version)]]
+  def decode(<<@tiny_struct_marker::4, struct_size::4, signature::8, struct::binary>>, version) do
+    decode_struct(struct, signature, struct_size, version)
   end
 
-  def decode(<<@struct8_marker, _struct_size::8, signature::8, struct::binary>>, version) do
-    [[sig: signature, fields: Decoder.decode(struct, version)]]
+  def decode(<<@struct8_marker, struct_size::8, signature::8, struct::binary>>, version) do
+    decode_struct(struct, signature, struct_size, version)
   end
 
-  def decode(<<@struct16_marker, _struct_size::16, signature::8, struct::binary>>, version) do
-    [[sig: signature, fields: Decoder.decode(struct, version)]]
+  def decode(<<@struct16_marker, struct_size::16, signature::8, struct::binary>>, version) do
+    decode_struct(struct, signature, struct_size, version)
   end
 
   # Decode integers
@@ -143,10 +143,35 @@ defmodule BoltNeo4j.Packstream.DecoderV1 do
     [str | Decoder.decode(rest, version)]
   end
 
-  defp decode_map(data, version) do
-    Decoder.decode(data, version)
+  defp decode_list(data, nb_items, version) do
+    {new, old} =
+      Decoder.decode(data, version)
+      |> Enum.split(nb_items)
+
+    [new | old]
+  end
+
+  defp decode_map(data, nb_entries, version) do
+    {new, old} =
+      Decoder.decode(data, version)
+      |> Enum.split(2 * nb_entries)
+
+    [new |> to_map | old]
+  end
+
+  defp to_map(data) do
+    data
     |> Enum.chunk_every(2)
     |> Enum.map(&List.to_tuple/1)
     |> Map.new()
+  end
+
+  defp decode_struct(data, signature, struct_size, version) do
+    {new, old} =
+      data
+      |> Decoder.decode(version)
+      |> Enum.split(struct_size)
+
+    [[sig: signature, fields: new] | old]
   end
 end
