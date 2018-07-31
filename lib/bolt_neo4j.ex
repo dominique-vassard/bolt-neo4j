@@ -15,6 +15,6 @@ defmodule BoltNeo4j do
     {:ok, _} = Bolt.handshake(:gen_tcp, port_, options)
     {:ok, _info} = Bolt.init(:gen_tcp, port_, auth)
 
-    # Bolt.run_statement(:gen_tcp, p, query, params)
+    Bolt.run_statement(:gen_tcp, port_, query, params)
   end
 end
