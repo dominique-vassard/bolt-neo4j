@@ -1,10 +1,13 @@
 defmodule BoltNeo4j.BoltTest do
-  use BoltNeo4j.UnitCase
+  # use BoltNeo4j.UnitCase
+  use ExUnit.Case
 
   alias BoltNeo4j.Bolt
 
-  @host 'localhost'
-  @port 7687
+  @host Application.get_env(:bolt_neo4j, :bolt_host) |> String.to_charlist()
+  @port Application.get_env(:bolt_neo4j, :bolt_port)
+  @user Application.get_env(:bolt_neo4j, :user)
+  @pass Application.get_env(:bolt_neo4j, :password)
 
   describe "handshake/3:" do
     test "Valid for default version" do
@@ -27,13 +30,13 @@ defmodule BoltNeo4j.BoltTest do
     test "ok" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
-      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
+      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass})
     end
 
     test "invalid auth" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
-      assert {:error, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "wrong!"})
+      assert {:error, _} = Bolt.init(:gen_tcp, port_, {@user, "wrong!"})
     end
   end
 
@@ -42,7 +45,7 @@ defmodule BoltNeo4j.BoltTest do
     test "ok" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
-      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
+      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass})
       assert {:error, _} = Bolt.run(:gen_tcp, port_, "Invalid cypher")
       assert({:ok, _} = Bolt.ack_failure(:gen_tcp, port_))
     end
@@ -52,7 +55,7 @@ defmodule BoltNeo4j.BoltTest do
     test "ok without parameters" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
-      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
+      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass})
 
       assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num")
@@ -61,7 +64,7 @@ defmodule BoltNeo4j.BoltTest do
     test "ok with parameters" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
-      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
+      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass})
 
       assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
                Bolt.run(:gen_tcp, port_, "RETURN {num} AS num", %{num: 5})
@@ -70,7 +73,7 @@ defmodule BoltNeo4j.BoltTest do
     test "returns IGNORED when sending RUN on a FAILURE state" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
-      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
+      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass})
       assert {:error, _} = Bolt.run(:gen_tcp, port_, "Invalid cypher")
 
       assert {:error, _} = Bolt.pull_all(:gen_tcp, port_)
@@ -79,7 +82,7 @@ defmodule BoltNeo4j.BoltTest do
     test "ok after IGNORED AND ACK_FAILURE" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
-      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
+      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass})
       assert {:error, _} = Bolt.run(:gen_tcp, port_, "Invalid cypher")
 
       {:error, _} = Bolt.pull_all(:gen_tcp, port_)
@@ -96,7 +99,7 @@ defmodule BoltNeo4j.BoltTest do
     test "ok" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
-      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
+      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass})
 
       assert {:ok, %{"fields" => ["num"], "result_available_after" => _}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num")
@@ -109,7 +112,7 @@ defmodule BoltNeo4j.BoltTest do
     test "ok" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
-      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
+      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass})
       res = Bolt.run_statement(:gen_tcp, port_, "MATCH (n) RETURN n")
 
       assert is_list(res)
@@ -120,7 +123,7 @@ defmodule BoltNeo4j.BoltTest do
     test "ok" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
-      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
+      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass})
 
       assert {:ok, %{"fields" => ["num"], "result_available_after" => _}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num")
@@ -133,7 +136,7 @@ defmodule BoltNeo4j.BoltTest do
     test "ok" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
-      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
+      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass})
 
       assert {:ok, %{"fields" => ["num"], "result_available_after" => _}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num")
@@ -144,7 +147,7 @@ defmodule BoltNeo4j.BoltTest do
     test "ok during process" do
       {:ok, port_} = :gen_tcp.connect(@host, @port, active: false, mode: :binary, packet: :raw)
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
-      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {"neo4j", "test"})
+      assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass})
       assert {:error, _} = Bolt.run(:gen_tcp, port_, "Invalid cypher")
 
       {:error, _} = Bolt.pull_all(:gen_tcp, port_)

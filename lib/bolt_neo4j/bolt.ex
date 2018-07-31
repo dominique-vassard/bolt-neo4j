@@ -316,31 +316,21 @@ defmodule BoltNeo4j.Bolt do
     end
   end
 
-  defp receive_data(transport, port, recv_timeout, version, responses \\ [])
+  defp receive_data(transport, port, recv_timeout, version) do
+    case do_receive_data(transport, port, recv_timeout, version, <<>>) do
+      data -> Decoder.decode_message(data, version)
+    end
+  end
 
-  defp receive_data(transport, port, recv_timeout, version, responses) do
+  defp do_receive_data(transport, port, recv_timeout, version, data) do
     case transport.recv(port, 2, recv_timeout) do
       {:ok, <<0x00, 0x00>>} ->
-        case length(responses) do
-          1 -> List.first(responses)
-          _ -> Enum.reverse(responses)
-        end
+        data
 
       {:ok, <<chunk_size::integer-16>>} ->
-        case transport.recv(port, chunk_size, recv_timeout) do
-          {:ok, data} ->
-            Logger.log_message(:server, :receive, data, :hex)
-
-            receive_data(transport, port, recv_timeout, version, [
-              Decoder.decode_message(data, version) | responses
-            ])
-
-          error ->
-            error
+        with {:ok, new_data} <- transport.recv(port, chunk_size, recv_timeout) do
+          do_receive_data(transport, port, recv_timeout, version, data <> new_data)
         end
-
-      {:error, error} ->
-        {:error, error}
     end
   end
 
