@@ -47,7 +47,7 @@ defmodule BoltNeo4j.BoltTest do
       assert {:ok, 1} = Bolt.handshake(:gen_tcp, port_, protocol_version: 1)
       assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass})
       assert {:error, _} = Bolt.run(:gen_tcp, port_, "Invalid cypher")
-      assert({:ok, _} = Bolt.ack_failure(:gen_tcp, port_))
+      assert :ok = Bolt.ack_failure(:gen_tcp, port_)
     end
   end
 
@@ -86,7 +86,7 @@ defmodule BoltNeo4j.BoltTest do
       assert {:error, _} = Bolt.run(:gen_tcp, port_, "Invalid cypher")
 
       {:error, _} = Bolt.pull_all(:gen_tcp, port_)
-      {:ok, _} = Bolt.ack_failure(:gen_tcp, port_)
+      :ok = Bolt.ack_failure(:gen_tcp, port_)
 
       assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num")
@@ -141,7 +141,7 @@ defmodule BoltNeo4j.BoltTest do
       assert {:ok, %{"fields" => ["num"], "result_available_after" => _}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num")
 
-      {:ok, _} = Bolt.reset(:gen_tcp, port_)
+      :ok = Bolt.reset(:gen_tcp, port_)
     end
 
     test "ok during process" do
@@ -151,7 +151,7 @@ defmodule BoltNeo4j.BoltTest do
       assert {:error, _} = Bolt.run(:gen_tcp, port_, "Invalid cypher")
 
       {:error, _} = Bolt.pull_all(:gen_tcp, port_)
-      {:ok, _} = Bolt.reset(:gen_tcp, port_)
+      :ok = Bolt.reset(:gen_tcp, port_)
 
       assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num")

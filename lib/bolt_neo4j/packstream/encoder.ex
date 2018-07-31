@@ -81,7 +81,7 @@ defimpl BoltNeo4j.Packstream.Encoder, for: Any do
     EncoderHelper.call_encode(:struct, data, version)
   end
 
-  def encode(_, version) do
-    {:error, "Type not supported in version #{version}"}
+  def encode(data, _version) do
+    raise BoltNeo4j.Packstream.EncodeError, item: data
   end
 end

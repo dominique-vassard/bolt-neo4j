@@ -1,8 +1,6 @@
 defmodule BoltNeo4j.Bolt do
-  alias BoltNeo4j.Logger
-  alias BoltNeo4j.Packstream.Encoder
-  alias BoltNeo4j.Packstream.Decoder
-
+  alias BoltNeo4j.{Error, Logger}
+  alias BoltNeo4j.Packstream.{Decoder, Encoder}
   alias BoltNeo4j.Packstream.Message.{AckFailure, DiscardAll, Init, PullAll, Reset, Run}
 
   @recv_timeout 10_000
@@ -143,8 +141,12 @@ defmodule BoltNeo4j.Bolt do
     Logger.log_message(:server, recv_data)
 
     case recv_data do
-      {:success, data} -> {:ok, data}
-      {:failure, error} -> {:error, error}
+      {:success, _} ->
+        :ok
+
+      # {:failure, error} -> {:error, error}
+      error ->
+        Error.exception(error, port, :ack_failure)
     end
   end
 
@@ -177,6 +179,7 @@ defmodule BoltNeo4j.Bolt do
     case recv_data do
       {:success, data} -> {:ok, data}
       {:failure, error} -> {:error, error}
+      error -> error
     end
   end
 
@@ -262,8 +265,9 @@ defmodule BoltNeo4j.Bolt do
     Logger.log_message(:server, recv_data)
 
     case recv_data do
-      {:success, data} -> {:ok, data}
+      {:success, _} -> :ok
       {:failure, error} -> {:error, error}
+      error -> Error.exception(error, port, :reset)
     end
   end
 
@@ -288,9 +292,18 @@ defmodule BoltNeo4j.Bolt do
       ]
   """
   def run_statement(transport, port, statement, parameters \\ %{}, options \\ []) do
-    with {:ok, success} = run(transport, port, statement, parameters, options),
-         {:ok, records} = pull_all(transport, port, options) do
+    with {:ok, success} <- run(transport, port, statement, parameters, options),
+         {:ok, records} <- pull_all(transport, port, options) do
       [{:success, success} | records]
+    else
+      {:error, :closed} ->
+        Error.exception({:error, :closed}, port, :run_statement)
+
+      {:error, error} ->
+        Error.exception(error, port, :run_statement)
+
+      error ->
+        Error.exception(error, port, :run_statement)
     end
   end
 
@@ -317,20 +330,29 @@ defmodule BoltNeo4j.Bolt do
   end
 
   defp receive_data(transport, port, recv_timeout, version) do
-    case do_receive_data(transport, port, recv_timeout, version, <<>>) do
-      data -> Decoder.decode_message(data, version)
+    with {:ok, data} <- do_receive_data(transport, port, recv_timeout, version, <<>>) do
+      Decoder.decode_message(data, version)
+    else
+      error -> error
     end
+
+    # case do_receive_data(transport, port, recv_timeout, version, <<>>) do
+    #   data ->
+    # end
   end
 
   defp do_receive_data(transport, port, recv_timeout, version, data) do
     case transport.recv(port, 2, recv_timeout) do
       {:ok, <<0x00, 0x00>>} ->
-        data
+        {:ok, data}
 
       {:ok, <<chunk_size::integer-16>>} ->
         with {:ok, new_data} <- transport.recv(port, chunk_size, recv_timeout) do
           do_receive_data(transport, port, recv_timeout, version, data <> new_data)
         end
+
+      error ->
+        error
     end
   end
 
