@@ -167,7 +167,6 @@ defmodule BoltNeo4j.Bolt do
 
     data = Encoder.encode(run_struct, version)
 
-    Logger.log_message(:client, :run, data)
     Logger.log_message(:client, :run, data, :hex)
 
     transport.send(port, data)
@@ -223,7 +222,6 @@ defmodule BoltNeo4j.Bolt do
 
     data = Encoder.encode(discard_all_struct, version)
 
-    Logger.log_message(:client, :discard_all, data)
     Logger.log_message(:client, :discard_all, data, :hex)
 
     transport.send(port, data)
@@ -256,7 +254,6 @@ defmodule BoltNeo4j.Bolt do
 
     data = Encoder.encode(discard_all_struct, version)
 
-    Logger.log_message(:client, :reset, data)
     Logger.log_message(:client, :reset, data, :hex)
 
     transport.send(port, data)
@@ -332,6 +329,8 @@ defmodule BoltNeo4j.Bolt do
       {:ok, <<chunk_size::integer-16>>} ->
         case transport.recv(port, chunk_size, recv_timeout) do
           {:ok, data} ->
+            Logger.log_message(:server, :receive, data, :hex)
+
             receive_data(transport, port, recv_timeout, version, [
               Decoder.decode_message(data, version) | responses
             ])
