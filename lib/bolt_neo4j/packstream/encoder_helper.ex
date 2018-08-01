@@ -2,6 +2,7 @@ defmodule BoltNeo4j.Packstream.EncoderHelper do
   alias BoltNeo4j.Packstream.Helper
 
   @available_versions [1, 2]
+  @types_requiring_version [:list, :map, :date, :time_with_tz, :local_time, :duration]
 
   @doc """
   Retrieves availble encoder version numbers
@@ -59,7 +60,7 @@ defmodule BoltNeo4j.Packstream.EncoderHelper do
   end
 
   defp do_call(data_type, module, func_atom, data, version)
-       when data_type in [:list, :map, :date, :time_with_tz] do
+       when data_type in @types_requiring_version do
     Kernel.apply(module, func_atom, [data, version])
   end
 

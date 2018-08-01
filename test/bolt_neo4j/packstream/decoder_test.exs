@@ -59,4 +59,28 @@ defmodule BoltNeo4j.Packstream.DecoderTest do
       assert {:ignored, _} = Decoder.decode_message(<<0xB0, 0x7E>>, version)
     end)
   end
+
+  test "Decode in v2" do
+    assert [~D[2018-07-29]] = Decoder.decode(<<0xB1, 0x44, 0xC9, 0x45, 0x4D>>, 2)
+
+    ttz = [
+      %BoltNeo4j.Types.TimeWithTZ{
+        time: ~T[12:45:30.250000],
+        timezone_offset: 3600
+      }
+    ]
+
+    assert ^ttz =
+             Decoder.decode(
+               <<0xB2, 0x54, 0xCB, 0x0, 0x0, 0x29, 0xC5, 0xF8, 0x3C, 0x56, 0x80, 0xC9, 0xE,
+                 0x10>>,
+               2
+             )
+
+    assert [~T[17:34:45.000000]] =
+             Decoder.decode(<<0xB1, 0x74, 0xCB, 0x0, 0x0, 0x39, 0x8E, 0xAF, 0xF1, 0xD2, 0x0>>, 2)
+
+    duration = [%BoltNeo4j.Types.Duration{days: 34, months: 15, nanoseconds: 5550, seconds: 54}]
+    assert ^duration = Decoder.decode(<<0xB4, 0x45, 0xF, 0x22, 0x36, 0xC9, 0x15, 0xAE>>, 2)
+  end
 end

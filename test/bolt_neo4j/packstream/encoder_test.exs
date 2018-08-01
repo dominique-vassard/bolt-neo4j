@@ -1,6 +1,7 @@
 defmodule BoltNeo4j.Packstream.EncoderTest do
   use ExUnit.Case
 
+  alias BoltNeo4j.Types.TimeWithTZ
   alias BoltNeo4j.Packstream.{Encoder, EncoderHelper}
   alias BoltNeo4j.Packstream.Message.{AckFailure, DiscardAll, Init, PullAll, Reset, Run}
 
@@ -10,10 +11,6 @@ defmodule BoltNeo4j.Packstream.EncoderTest do
 
   test "Encode nil in v1" do
     assert <<0xC0>> = Encoder.encode(nil)
-  end
-
-  test "Encode nil in v2" do
-    assert {:error, _} = Encoder.encode(nil, 2)
   end
 
   test "Encode all common types" do
@@ -41,5 +38,14 @@ defmodule BoltNeo4j.Packstream.EncoderTest do
       assert <<_::binary>> =
                Encoder.encode(%Run{statement: "RETURN 1 AS num", parameters: %{}}, version)
     end)
+  end
+
+  test "Encode in V2" do
+    assert <<_::binary>> = Encoder.encode(~D[2018-07-14], 2)
+
+    assert <<_::binary>> =
+             Encoder.encode(%TimeWithTZ{time: ~T[12:45:30.250000], timezone_offset: 3600}, 2)
+
+    assert <<_::binary>> = Encoder.encode(~T[14:45:53.34], 2)
   end
 end

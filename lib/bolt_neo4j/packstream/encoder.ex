@@ -1,4 +1,4 @@
-alias BoltNeo4j.Types.TimeWithTZ
+alias BoltNeo4j.Types.{Duration, TimeWithTZ}
 alias BoltNeo4j.Packstream.EncoderHelper
 alias BoltNeo4j.Packstream.Message.{AckFailure, DiscardAll, Init, PullAll, Reset, Run}
 
@@ -52,9 +52,21 @@ defimpl BoltNeo4j.Packstream.Encoder, for: Date do
   end
 end
 
+defimpl BoltNeo4j.Packstream.Encoder, for: Time do
+  def encode(data, version) do
+    EncoderHelper.call_encode(:local_time, data, version)
+  end
+end
+
 defimpl BoltNeo4j.Packstream.Encoder, for: TimeWithTZ do
   def encode(data, version) do
     EncoderHelper.call_encode(:time_with_tz, data, version)
+  end
+end
+
+defimpl BoltNeo4j.Packstream.Encoder, for: Duration do
+  def encode(data, version) do
+    EncoderHelper.call_encode(:duration, data, version)
   end
 end
 
