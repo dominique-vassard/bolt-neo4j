@@ -31,7 +31,6 @@ defmodule BoltNeo4j.Packstream.DecoderV1 do
   @struct8_marker 0xDC
   @struct16_marker 0xDD
 
-  def decode(<<0x0>>, _), do: []
   def decode("", _), do: []
 
   @doc """
