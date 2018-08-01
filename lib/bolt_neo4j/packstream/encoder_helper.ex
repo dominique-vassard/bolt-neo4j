@@ -18,6 +18,14 @@ defmodule BoltNeo4j.Packstream.EncoderHelper do
   If function does not exists, search for an implementation in previous versions
   """
 
+  def call_encode(data_type, data, version) when version not in @available_versions do
+    if version > List.last(@available_versions) do
+      call_encode(data_type, data, version, List.last(@available_versions))
+    else
+      call_encode(data_type, data, nil)
+    end
+  end
+
   def call_encode(data_type, data, version) when version in @available_versions do
     call_encode(data_type, data, version, version)
   end
