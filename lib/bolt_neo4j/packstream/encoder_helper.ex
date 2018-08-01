@@ -59,7 +59,7 @@ defmodule BoltNeo4j.Packstream.EncoderHelper do
   end
 
   defp do_call(data_type, module, func_atom, data, version)
-       when data_type in [:list, :map, :date] do
+       when data_type in [:list, :map, :date, :time_with_tz] do
     Kernel.apply(module, func_atom, [data, version])
   end
 
