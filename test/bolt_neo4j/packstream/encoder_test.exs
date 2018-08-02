@@ -47,5 +47,6 @@ defmodule BoltNeo4j.Packstream.EncoderTest do
              Encoder.encode(%TimeWithTZ{time: ~T[12:45:30.250000], timezone_offset: 3600}, 2)
 
     assert <<_::binary>> = Encoder.encode(~T[14:45:53.34], 2)
+    assert <<_::binary>> = Encoder.encode(~N[2018-04-05 12:34:00.543], 2)
   end
 end

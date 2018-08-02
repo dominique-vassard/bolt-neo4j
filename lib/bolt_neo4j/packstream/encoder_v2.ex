@@ -16,6 +16,9 @@ defmodule BoltNeo4j.Packstream.EncoderV2 do
   @duration_marker 0x45
   @duration_struct_size 4
 
+  @local_datetime_marker 0x64
+  @local_datetime_struct_size 2
+
   @doc """
   Encode Date into Bolt protocol binary
 
@@ -77,5 +80,25 @@ defmodule BoltNeo4j.Packstream.EncoderV2 do
       Encoder.encode(months, version) <>
       Encoder.encode(days, version) <>
       Encoder.encode(seconds, version) <> Encoder.encode(nanoseconds, version)
+  end
+
+  @doc """
+  Encode LOCAL DATETIME
+
+  WARNING: Nanoseconds are lef off as NaiveDateTime doesn't handle them.
+  A new Calendar qhould be implemented to manage them
+
+  ## Example
+      iex> EncoderV2.encode_local_datetime ~N[2018-04-05 12:34:00.543], 2
+      <<178, 100, 202, 90, 198, 23, 184, 202, 32, 93, 133, 192>>
+  """
+  def encode_local_datetime(local_datetime, version) do
+    datetime = NaiveDateTime.diff(local_datetime, ~N[1970-01-01 00:00:00.000], :microsecond)
+
+    sec = div(datetime, 1_000_000)
+    nanosec = rem(datetime, 1_000_000) * 1_000
+
+    <<@tiny_struct_marker::4, @local_datetime_struct_size::4, @local_datetime_marker>> <>
+      Encoder.encode(sec, version) <> Encoder.encode(nanosec, version)
   end
 end

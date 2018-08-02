@@ -70,6 +70,12 @@ defimpl BoltNeo4j.Packstream.Encoder, for: Duration do
   end
 end
 
+defimpl BoltNeo4j.Packstream.Encoder, for: NaiveDateTime do
+  def encode(data, version) do
+    EncoderHelper.call_encode(:local_datetime, data, version)
+  end
+end
+
 defimpl BoltNeo4j.Packstream.Encoder, for: [AckFailure, DiscardAll, Init, PullAll, Reset, Run] do
   @max_chunk_size 65_535
   @end_marker <<0x00, 0x00>>

@@ -16,6 +16,9 @@ defmodule BoltNeo4j.Packstream.DecoderV2 do
   @duration_marker 0x45
   @duration_struct_size 4
 
+  @local_datetime_marker 0x64
+  @local_datetime_struct_size 2
+
   @doc """
   Decode DATE
 
@@ -139,6 +142,46 @@ defmodule BoltNeo4j.Packstream.DecoderV2 do
       |> Enum.split(@duration_struct_size)
 
     [%Duration{months: months, days: days, seconds: seconds, nanoseconds: nanoseconds} | rest_dec]
+  end
+
+  @doc """
+  Decode LOCAL DATETIME
+
+  WARNING: Nanoseconds are lost as NaiveDateTime is only able to manange microseconds!
+
+  Without specific decoding, result is as follow:
+      iex> BoltNeo4j.test 'localhost', 7687, "RETURN localdatetime('2018-04-05T12:34:00.543') AS d", %{}, {"neo4j", "test"}, [protocol_version: 2]
+      [
+        success: %{"fields" => ["d"], "result_available_after" => 6},
+        record: [[sig: 100, fields: [1522931640, 543000000]]],
+        success: %{"result_consumed_after" => 0, "type" => "r"}
+      ]
+
+  Now it is
+      [
+        success: %{"fields" => ["d"], "result_available_after" => 6},
+        record: [~N[2018-04-05 12:34:00.543]],
+        success: %{"result_consumed_after" => 0, "type" => "r"}
+      ]
+  """
+  def decode(
+        <<@tiny_struct_marker::4, @local_datetime_struct_size::4, @local_datetime_marker,
+          rest::binary>>,
+        version
+      ) do
+    {[seconds, nanoseconds], rest_dec} =
+      rest
+      |> Decoder.decode(version)
+      |> Enum.split(@duration_struct_size)
+
+    d =
+      NaiveDateTime.add(
+        ~N[1970-01-01 00:00:00.000],
+        seconds * 1_000_000_000 + nanoseconds,
+        :nanosecond
+      )
+
+    [d | rest_dec]
   end
 
   def decode(_, _) do

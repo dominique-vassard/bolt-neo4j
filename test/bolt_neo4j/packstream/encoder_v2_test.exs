@@ -34,5 +34,10 @@ defmodule BoltNeo4j.Packstream.EncoderV2Test do
       assert <<0xB4, 0x45, 0xF, 0x22, 0x36, 0xC9, 0x15, 0xAE>> =
                EncoderV2.encode_duration(duration, 2)
     end
+
+    test "local datetime" do
+      assert <<0xB2, 0x64, 0xCA, 0x5A, 0xC6, 0x17, 0xB8, 0xCA, 0x20, 0x5D, 0x85, 0xC0>> =
+               EncoderV2.encode_local_datetime(~N[2018-04-05 12:34:00.543], 2)
+    end
   end
 end

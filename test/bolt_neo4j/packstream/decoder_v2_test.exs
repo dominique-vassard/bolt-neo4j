@@ -39,5 +39,13 @@ defmodule BoltNeo4j.DecoderV2Test do
       assert [%Duration{days: 34, months: 15, nanoseconds: 5550, seconds: 54}] =
                DecoderV2.decode(<<0xB4, 0x45, 0xF, 0x22, 0x36, 0xC9, 0x15, 0xAE>>, 2)
     end
+
+    test "local datetime" do
+      assert [~N[2018-04-05 12:34:00.543]] =
+               DecoderV2.decode(
+                 <<0xB2, 0x64, 0xCA, 0x5A, 0xC6, 0x17, 0xB8, 0xCA, 0x20, 0x5D, 0x85, 0xC0>>,
+                 2
+               )
+    end
   end
 end

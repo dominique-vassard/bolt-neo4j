@@ -2,7 +2,15 @@ defmodule BoltNeo4j.Packstream.EncoderHelper do
   alias BoltNeo4j.Packstream.Helper
 
   @available_versions [1, 2]
-  @types_requiring_version [:list, :map, :date, :time_with_tz, :local_time, :duration]
+  @types_requiring_version [
+    :list,
+    :map,
+    :duration,
+    :date,
+    :local_time,
+    :time_with_tz,
+    :local_datetime
+  ]
 
   @doc """
   Retrieves availble encoder version numbers
