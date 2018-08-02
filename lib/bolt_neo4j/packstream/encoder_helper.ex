@@ -11,7 +11,8 @@ defmodule BoltNeo4j.Packstream.EncoderHelper do
     :time_with_tz,
     :local_datetime,
     :datetime_with_tz,
-    :datetime_with_offset
+    :datetime_with_offset,
+    :point
   ]
 
   @doc """

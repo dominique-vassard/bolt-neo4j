@@ -1,6 +1,6 @@
 defmodule BoltNeo4j.Packstream.DecoderV2 do
   alias BoltNeo4j.Packstream.{Decoder, Helper}
-  alias BoltNeo4j.Types.{DateTimeWithOffset, Duration, TimeWithTZ}
+  alias BoltNeo4j.Types.{DateTimeWithOffset, Duration, TimeWithTZ, Point}
 
   @tiny_struct_marker 0xB
 
@@ -24,6 +24,12 @@ defmodule BoltNeo4j.Packstream.DecoderV2 do
 
   @datetime_with_zone_id_marker 0x66
   @datetime_with_zone_id_struct_size 3
+
+  @point2d_marker 0x58
+  @point2d_struct_size 3
+
+  @point3d_marker 0x59
+  @point3d_struct_size 4
 
   @doc """
   Decode DATE
@@ -237,6 +243,144 @@ defmodule BoltNeo4j.Packstream.DecoderV2 do
       ) do
     {datetime, rest} = extract_datetime(data, version)
     [datetime | rest]
+  end
+
+  @doc """
+  Decode POINT 2D
+
+  For cartesian point
+  Without specific decoding, result is as follow:
+      iex> BoltNeo4j.test 'localhost', 7687, "RETURN point({x: 40, y: 45}) AS p", %{}, {"neo4j", "test"}, [protocol_version: 2]
+      [
+        success: %{"fields" => ["p"], "result_available_after" => 0},
+        record: [[sig: 88, fields: [7203, 40.0, 45.0]]],
+        success: %{"result_consumed_after" => 1, "type" => "r"}
+      ]
+
+  Now, it is:
+      [
+        success: %{"fields" => ["p"], "result_available_after" => 6},
+        record: [
+          %BoltNeo4j.Types.Point{
+            crs: "cartesian",
+            height: nil,
+            latitude: nil,
+            longitude: nil,
+            srid: 7203,
+            x: 40.0,
+            y: 45.0,
+            z: nil
+          }
+        ],
+        success: %{"result_consumed_after" => 0, "type" => "r"}
+      ]
+
+  For geographic point
+  Withous specific decoding, result is as follow:
+      iex> BoltNeo4j.test 'localhost', 7687, "RETURN point({longitude: 40, latitude: 45}) AS p", %{}, {"neo4j", "test"}, [protocol_version: 2]
+      [
+        success: %{"fields" => ["p"], "result_available_after" => 16},
+        record: [[sig: 88, fields: [4326, 40.0, 45.0]]],
+        success: %{"result_consumed_after" => 0, "type" => "r"}
+      ]
+
+  Now, it is:
+      [
+        success: %{"fields" => ["p"], "result_available_after" => 8},
+        record: [
+          %BoltNeo4j.Types.Point{
+            crs: "wgs-84",
+            height: nil,
+            latitude: 45.0,
+            longitude: 40.0,
+            srid: 4326,
+            x: 40.0,
+            y: 45.0,
+            z: nil
+          }
+        ],
+        success: %{"result_consumed_after" => 1, "type" => "r"}
+      ]
+  """
+  def decode(
+        <<@tiny_struct_marker::4, @point2d_struct_size::4, @point2d_marker, data::binary>>,
+        version
+      ) do
+    {[srid, x, y], rest} =
+      data
+      |> Decoder.decode(version)
+      |> Enum.split(@point2d_struct_size)
+
+    [Point.create(srid, x, y) | rest]
+  end
+
+  @doc """
+   Decode POINT 3D
+
+   For cartesian point
+   Without specific decoding, result is as follow:
+       iex> BoltNeo4j.test 'localhost', 7687, "RETURN point({x: 40, y: 45, z: 150}) AS p", %{}, {"neo4j", "test"}, [protocol_version: 2]
+       [
+         success: %{"fields" => ["p"], "result_available_after" => 19},
+         record: [[sig: 89, fields: [9157, 45.0, 45.0, 150.0]]],
+         success: %{"result_consumed_after" => 2, "type" => "r"}
+       ]
+
+   Now, it is:
+       [
+         success: %{"fields" => ["p"], "result_available_after" => 0},
+         record: [
+           %BoltNeo4j.Types.Point{
+             crs: "cartesian-3d",
+             height: nil,
+             latitude: nil,
+             longitude: nil,
+             srid: 9157,
+             x: 40.0,
+             y: 45.0,
+             z: 150.0
+           }
+         ],
+         success: %{"result_consumed_after" => 0, "type" => "r"}
+       ]
+
+   For geographic point
+   Withous specific decoding, result is as follow:
+       iex> BoltNeo4j.test 'localhost', 7687, "RETURN point({longitude: 40, latitude: 45, height: 150}) AS p", %{}, {"neo4j", "test"}, [protocol_version: 2]
+       [
+         success: %{"fields" => ["p"], "result_available_after" => 18},
+         record: [[sig: 89, fields: [4979, 45.0, 45.0, 150.0]]],
+         success: %{"result_consumed_after" => 1, "type" => "r"}
+       ]
+
+   Now, it is:
+       [
+         success: %{"fields" => ["p"], "result_available_after" => 0},
+         record: [
+           %BoltNeo4j.Types.Point{
+             crs: "wgs-84-3d",
+             height: 150.0,
+             latitude: 40.0,
+             longitude: 45.0,
+             srid: 4979,
+             x: 40.0,
+             y: 45.0,
+             z: 150.0
+           }
+         ],
+         success: %{"result_consumed_after" => 1, "type" => "r"}
+       ]
+  """
+  def decode(
+        <<@tiny_struct_marker::4, @point3d_struct_size::4, @point3d_marker, data::binary>>,
+        version
+      ) do
+    {[srid, x, y, z], rest} =
+      data
+      |> Decoder.decode(version)
+      |> Enum.split(@point3d_struct_size)
+
+    [Point.create(srid, x, y, z) | rest]
   end
 
   def decode(_, _) do

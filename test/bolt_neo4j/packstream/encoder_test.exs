@@ -1,7 +1,7 @@
 defmodule BoltNeo4j.Packstream.EncoderTest do
   use ExUnit.Case
 
-  alias BoltNeo4j.Types.{DateTimeWithOffset, TimeWithTZ}
+  alias BoltNeo4j.Types.{DateTimeWithOffset, TimeWithTZ, Point}
   alias BoltNeo4j.Packstream.{Encoder, EncoderHelper, Helper}
   alias BoltNeo4j.Packstream.Message.{AckFailure, DiscardAll, Init, PullAll, Reset, Run}
 
@@ -63,5 +63,10 @@ defmodule BoltNeo4j.Packstream.EncoderTest do
                Helper.datetime_with_micro(~N[2016-05-24 13:26:08.543], "Europe/Berlin"),
                2
              )
+
+    assert <<_::binary>> = Encoder.encode(Point.create(:cartesian, 40, 45), 2)
+    assert <<_::binary>> = Encoder.encode(Point.create(:wgs_84, 40, 45), 2)
+    assert <<_::binary>> = Encoder.encode(Point.create(:cartesian, 40, 45, 150), 2)
+    assert <<_::binary>> = Encoder.encode(Point.create(:wgs_84, 40, 45, 150), 2)
   end
 end

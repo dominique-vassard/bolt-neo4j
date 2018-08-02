@@ -110,5 +110,79 @@ defmodule BoltNeo4j.Packstream.DecoderTest do
                  0x1C, 0x20>>,
                2
              )
+
+    assert [
+             %BoltNeo4j.Types.Point{
+               crs: "cartesian",
+               height: nil,
+               latitude: nil,
+               longitude: nil,
+               srid: 7203,
+               x: 40.0,
+               y: 45.0,
+               z: nil
+             }
+           ] =
+             Decoder.decode(
+               <<0xB3, 0x58, 0xC9, 0x1C, 0x23, 0xC1, 0x40, 0x44, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                 0xC1, 0x40, 0x46, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0>>,
+               2
+             )
+
+    assert [
+             %BoltNeo4j.Types.Point{
+               crs: "wgs-84",
+               height: nil,
+               latitude: 45.0,
+               longitude: 40.0,
+               srid: 4326,
+               x: 40.0,
+               y: 45.0,
+               z: nil
+             }
+           ] =
+             Decoder.decode(
+               <<0xB3, 0x58, 0xC9, 0x10, 0xE6, 0xC1, 0x40, 0x44, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                 0xC1, 0x40, 0x46, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0>>,
+               2
+             )
+
+    assert [
+             %BoltNeo4j.Types.Point{
+               crs: "cartesian-3d",
+               height: nil,
+               latitude: nil,
+               longitude: nil,
+               srid: 9157,
+               x: 40.0,
+               y: 45.0,
+               z: 150.0
+             }
+           ] =
+             Decoder.decode(
+               <<0xB4, 0x59, 0xC9, 0x23, 0xC5, 0xC1, 0x40, 0x44, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                 0xC1, 0x40, 0x46, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0xC1, 0x40, 0x62, 0xC0, 0x0,
+                 0x0, 0x0, 0x0, 0x0>>,
+               2
+             )
+
+    assert [
+             %BoltNeo4j.Types.Point{
+               crs: "wgs-84-3d",
+               height: 150.0,
+               latitude: 45.0,
+               longitude: 40.0,
+               srid: 4979,
+               x: 40.0,
+               y: 45.0,
+               z: 150.0
+             }
+           ] =
+             Decoder.decode(
+               <<0xB4, 0x59, 0xC9, 0x13, 0x73, 0xC1, 0x40, 0x44, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                 0xC1, 0x40, 0x46, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0xC1, 0x40, 0x62, 0xC0, 0x0,
+                 0x0, 0x0, 0x0, 0x0>>,
+               2
+             )
   end
 end

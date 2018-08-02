@@ -1,5 +1,5 @@
 defmodule BoltNeo4j.Packstream.EncoderV2 do
-  alias BoltNeo4j.Types.{DateTimeWithOffset, Duration, TimeWithTZ}
+  alias BoltNeo4j.Types.{DateTimeWithOffset, Duration, TimeWithTZ, Point}
   alias BoltNeo4j.Packstream.Encoder
 
   @tiny_struct_marker 0xB
@@ -24,6 +24,12 @@ defmodule BoltNeo4j.Packstream.EncoderV2 do
 
   @datetime_with_zone_id_marker 0x66
   @datetime_with_zone_id_struct_size 3
+
+  @point2d_marker 0x58
+  @point2d_struct_size 3
+
+  @point3d_marker 0x59
+  @point3d_struct_size 4
 
   @doc """
   Encode Date into Bolt protocol binary
@@ -150,6 +156,46 @@ defmodule BoltNeo4j.Packstream.EncoderV2 do
     <<@tiny_struct_marker::4, @datetime_with_zone_offset_struct_size::4,
       @datetime_with_zone_offset_marker>> <>
       encode_datetime(ndt, version) <> Encoder.encode(tz_offset, version)
+  end
+
+  @doc """
+  Encode POINT 2D
+
+  ## Example (cartesian)
+      iex> EncoderV2.encode_point BoltNeo4j.Types.Point.create(:cartesian, 40, 45), 2
+      <<179, 88, 201, 28, 35, 193, 64, 68, 0, 0, 0, 0, 0, 0, 193, 64, 70, 128, 0, 0,
+        0, 0, 0>>
+
+  ## Example (geographic)
+      iex> EncoderV2.encode_point BoltNeo4j.Types.Point.create(:wgs_84, 40, 45), 2
+      <<179, 88, 201, 16, 230, 193, 64, 68, 0, 0, 0, 0, 0, 0, 193, 64, 70, 128, 0, 0,
+        0, 0, 0>>
+
+  """
+  def encode_point(%Point{z: nil} = point, version) do
+    <<@tiny_struct_marker::4, @point2d_struct_size::4, @point2d_marker>> <>
+      Encoder.encode(point.srid, version) <>
+      Encoder.encode(point.x, version) <> Encoder.encode(point.y, version)
+  end
+
+  @doc """
+  Encode POINT 3D
+
+  ## Example (cartesian)
+      iex> EncoderV2.encode_point Point.create(:cartesian, 40, 45, 150), 2
+      <<180, 89, 201, 35, 197, 193, 64, 68, 0, 0, 0, 0, 0, 0, 193, 64, 70, 128, 0, 0,
+      0, 0, 0, 193, 64, 98, 192, 0, 0, 0, 0, 0>>
+
+  ## Example (geographic)
+      iex> EncoderV2.encode_point BoltNeo4j.Types.Point.create(:wgs_84, 40, 45, 150), 2
+      <<180, 89, 201, 19, 115, 193, 64, 68, 0, 0, 0, 0, 0, 0, 193, 64, 70, 128, 0, 0,
+        0, 0, 0, 193, 64, 98, 192, 0, 0, 0, 0, 0>>
+  """
+  def encode_point(point, version) do
+    <<@tiny_struct_marker::4, @point3d_struct_size::4, @point3d_marker>> <>
+      Encoder.encode(point.srid, version) <>
+      Encoder.encode(point.x, version) <>
+      Encoder.encode(point.y, version) <> Encoder.encode(point.z, version)
   end
 
   defp encode_datetime(%NaiveDateTime{} = datetime, version) do
