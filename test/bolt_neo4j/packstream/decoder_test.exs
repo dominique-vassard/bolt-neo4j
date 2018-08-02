@@ -2,6 +2,7 @@ defmodule BoltNeo4j.Packstream.DecoderTest do
   use ExUnit.Case
 
   alias BoltNeo4j.Packstream.Decoder
+  alias BoltNeo4j.Packstream.Helper
 
   defmodule TestStruct do
     defstruct [:id, :value]
@@ -86,6 +87,27 @@ defmodule BoltNeo4j.Packstream.DecoderTest do
     assert [~N[2018-04-05 12:34:00.543]] =
              Decoder.decode(
                <<0xB2, 0x64, 0xCA, 0x5A, 0xC6, 0x17, 0xB8, 0xCA, 0x20, 0x5D, 0x85, 0xC0>>,
+               2
+             )
+
+    dt = Helper.datetime_with_micro(~N[2016-05-24 13:26:08.543], "Europe/Berlin")
+
+    assert [^dt] =
+             Decoder.decode(
+               <<0xB3, 0x66, 0xCA, 0x57, 0x44, 0x56, 0x70, 0xCA, 0x20, 0x5D, 0x85, 0xC0, 0x8D,
+                 0x45, 0x75, 0x72, 0x6F, 0x70, 0x65, 0x2F, 0x42, 0x65, 0x72, 0x6C, 0x69, 0x6E>>,
+               2
+             )
+
+    assert [
+             %BoltNeo4j.Types.DateTimeWithOffset{
+               naivedatetime: ~N[2016-05-24 13:26:08.543],
+               timezone_offset: 7200
+             }
+           ] =
+             Decoder.decode(
+               <<0xB3, 0x46, 0xCA, 0x57, 0x44, 0x56, 0x70, 0xCA, 0x20, 0x5D, 0x85, 0xC0, 0xC9,
+                 0x1C, 0x20>>,
                2
              )
   end

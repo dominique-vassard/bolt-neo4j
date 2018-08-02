@@ -275,7 +275,7 @@ defmodule BoltNeo4j.Bolt do
   Runs a statement (most likely Cypher statement) and returns a list of the
   records and a summary.
 
-  Records are represented using PackStream's record data type. Their Elixir
+  Records are represented using Packstream's record data type. Their Elixir
   representation is a Keyword with the indexse `:sig` and `:fields`.
 
   ## Options
@@ -331,6 +331,7 @@ defmodule BoltNeo4j.Bolt do
 
   defp receive_data(transport, port, recv_timeout, version) do
     with {:ok, data} <- do_receive_data(transport, port, recv_timeout, version, <<>>) do
+      Logger.log_message(:server, :raw_data, data, :hex)
       Decoder.decode_message(data, version)
     else
       error -> error

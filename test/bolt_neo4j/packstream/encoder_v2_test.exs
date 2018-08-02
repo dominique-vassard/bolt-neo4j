@@ -1,8 +1,9 @@
 defmodule BoltNeo4j.Packstream.EncoderV2Test do
   use ExUnit.Case
 
-  alias BoltNeo4j.Types.{Duration, TimeWithTZ}
+  alias BoltNeo4j.Types.{DateTimeWithOffset, Duration, TimeWithTZ}
   alias BoltNeo4j.Packstream.EncoderV2
+  alias BoltNeo4j.Packstream.Helper
 
   describe "Encode temporal types:" do
     test "date post 1970-01-01" do
@@ -38,6 +39,21 @@ defmodule BoltNeo4j.Packstream.EncoderV2Test do
     test "local datetime" do
       assert <<0xB2, 0x64, 0xCA, 0x5A, 0xC6, 0x17, 0xB8, 0xCA, 0x20, 0x5D, 0x85, 0xC0>> =
                EncoderV2.encode_local_datetime(~N[2018-04-05 12:34:00.543], 2)
+    end
+
+    test "datetime with timezone id" do
+      dt = Helper.datetime_with_micro(~N[2016-05-24 13:26:08.543], "Europe/Berlin")
+
+      assert <<0xB3, 0x66, 0xCA, 0x57, 0x44, 0x56, 0x70, 0xCA, 0x20, 0x5D, 0x85, 0xC0, 0x8D, 0x45,
+               0x75, 0x72, 0x6F, 0x70, 0x65, 0x2F, 0x42, 0x65, 0x72, 0x6C, 0x69,
+               0x6E>> = EncoderV2.encode_datetime_with_tz(dt, 2)
+    end
+
+    test "datetime with timezone offset" do
+      dt = %DateTimeWithOffset{naivedatetime: ~N[2016-05-24 13:26:08.543], timezone_offset: 7200}
+
+      assert <<0xB3, 0x46, 0xCA, 0x57, 0x44, 0x56, 0x70, 0xCA, 0x20, 0x5D, 0x85, 0xC0, 0xC9, 0x1C,
+               0x20>> = EncoderV2.encode_datetime_with_offset(dt, 2)
     end
   end
 end

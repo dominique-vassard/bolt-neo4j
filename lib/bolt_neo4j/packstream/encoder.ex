@@ -1,4 +1,4 @@
-alias BoltNeo4j.Types.{Duration, TimeWithTZ}
+alias BoltNeo4j.Types.{DateTimeWithOffset, Duration, TimeWithTZ}
 alias BoltNeo4j.Packstream.EncoderHelper
 alias BoltNeo4j.Packstream.Message.{AckFailure, DiscardAll, Init, PullAll, Reset, Run}
 
@@ -73,6 +73,18 @@ end
 defimpl BoltNeo4j.Packstream.Encoder, for: NaiveDateTime do
   def encode(data, version) do
     EncoderHelper.call_encode(:local_datetime, data, version)
+  end
+end
+
+defimpl BoltNeo4j.Packstream.Encoder, for: DateTime do
+  def encode(data, version) do
+    EncoderHelper.call_encode(:datetime_with_tz, data, version)
+  end
+end
+
+defimpl BoltNeo4j.Packstream.Encoder, for: DateTimeWithOffset do
+  def encode(data, version) do
+    EncoderHelper.call_encode(:datetime_with_offset, data, version)
   end
 end
 

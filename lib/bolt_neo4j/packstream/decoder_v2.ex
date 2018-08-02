@@ -1,6 +1,6 @@
 defmodule BoltNeo4j.Packstream.DecoderV2 do
-  alias BoltNeo4j.Packstream.Decoder
-  alias BoltNeo4j.Types.{Duration, TimeWithTZ}
+  alias BoltNeo4j.Packstream.{Decoder, Helper}
+  alias BoltNeo4j.Types.{DateTimeWithOffset, Duration, TimeWithTZ}
 
   @tiny_struct_marker 0xB
 
@@ -18,6 +18,12 @@ defmodule BoltNeo4j.Packstream.DecoderV2 do
 
   @local_datetime_marker 0x64
   @local_datetime_struct_size 2
+
+  @datetime_with_zone_offset_marker 0x46
+  @datetime_with_zone_offset_struct_size 3
+
+  @datetime_with_zone_id_marker 0x66
+  @datetime_with_zone_id_struct_size 3
 
   @doc """
   Decode DATE
@@ -166,25 +172,104 @@ defmodule BoltNeo4j.Packstream.DecoderV2 do
   """
   def decode(
         <<@tiny_struct_marker::4, @local_datetime_struct_size::4, @local_datetime_marker,
-          rest::binary>>,
+          data::binary>>,
         version
       ) do
-    {[seconds, nanoseconds], rest_dec} =
-      rest
-      |> Decoder.decode(version)
-      |> Enum.split(@duration_struct_size)
+    {dt, rest} = extract_naivedatetime(data, version)
+    [dt | rest]
+  end
 
-    d =
+  @doc """
+  Decode DATETIME WITH ZONE OFFSET
+
+  WARNING: Nanoseconds are lost as NaiveDateTime is only able to manange microseconds!
+
+  Without specific decoding, result is as follow:
+      iex> BoltNeo4j.test 'localhost', 7687, "RETURN datetime('2018-04-05T12:34:23.543+01:00') AS d", %{}, {"neo4j", "test"}, [protocol_version: 2]
+      [
+        success: %{"fields" => ["d"], "result_available_after" => 6},
+        record: [[sig: 70, fields: [1522931663, 543000000, 3600]]],
+        success: %{"result_consumed_after" => 0, "type" => "r"}
+      ]
+  Now it is:
+      [
+      success: %{"fields" => ["d"], "result_available_after" => 1},
+      record: [
+        %BoltNeo4j.Types.DateTimeWithOffset{
+          naive_datetime: ~N[2018-04-05 12:34:23.543],
+          timezone_offset: 3600
+        }
+      ]
+  """
+  def decode(
+        <<@tiny_struct_marker::4, @datetime_with_zone_offset_struct_size::4,
+          @datetime_with_zone_offset_marker, data::binary>>,
+        version
+      ) do
+    {datetime, rest} = extract_datetime(data, version)
+    [datetime | rest]
+  end
+
+  @doc """
+  Decode DATETIME WITH ZONE ID
+
+  WARNING: Nanoseconds are lost as NaiveDateTime is only able to manange microseconds!
+
+  Without specific decoding, result is as follow:
+      iex> BoltNeo4j.test 'localhost', 7687, "RETURN datetime('2018-04-05T12:34:23.543[Europe/Berlin]') AS d", %{}, {"neo4j", "test"}, [protocol_version: 2]
+      [
+        success: %{"fields" => ["d"], "result_available_after" => 11},
+        record: [[sig: 102, fields: [1522931663, 543000000, "Europe/Berlin"]]],
+        success: %{"result_consumed_after" => 1, "type" => "r"}
+      ]
+
+      Now, it is:
+      [
+        success: %{"fields" => ["d"], "result_available_after" => 0},
+        record: [#DateTime<2018-04-05 12:34:23.543+02:00 CEST Europe/Berlin>],
+        success: %{"result_consumed_after" => 1, "type" => "r"}
+      ]
+  """
+  def decode(
+        <<@tiny_struct_marker::4, @datetime_with_zone_id_struct_size::4,
+          @datetime_with_zone_id_marker, data::binary>>,
+        version
+      ) do
+    {datetime, rest} = extract_datetime(data, version)
+    [datetime | rest]
+  end
+
+  def decode(_, _) do
+    {:error, "Not implemented"}
+  end
+
+  defp extract_datetime(data, version) do
+    {naive_dt, [tz_data | rest]} = extract_naivedatetime(data, version)
+
+    {create_datetime(naive_dt, tz_data), rest}
+  end
+
+  defp create_datetime(naive_dt, tz_data) when is_integer(tz_data) do
+    %DateTimeWithOffset{naivedatetime: naive_dt, timezone_offset: tz_data}
+  end
+
+  defp create_datetime(naive_dt, tz_data) do
+    Helper.datetime_with_micro(naive_dt, tz_data)
+  end
+
+  defp extract_naivedatetime(data, version) do
+    {[seconds, nanoseconds], rest} =
+      data
+      |> Decoder.decode(version)
+      |> Enum.split(2)
+
+    naive_dt =
       NaiveDateTime.add(
         ~N[1970-01-01 00:00:00.000],
         seconds * 1_000_000_000 + nanoseconds,
         :nanosecond
       )
 
-    [d | rest_dec]
-  end
-
-  def decode(_, _) do
-    {:error, "Not implemented"}
+    {naive_dt, rest}
   end
 end

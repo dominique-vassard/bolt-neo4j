@@ -3,6 +3,10 @@ defmodule BoltNeo4jTest do
 
   alias BoltNeo4j.Bolt
 
+  defmodule UnknownType do
+    defstruct [:id]
+  end
+
   test "Simple query without parameters", %{port: port} do
     res = Bolt.run_statement(:gen_tcp, port, "RETURN 1 AS num", %{})
 
@@ -108,10 +112,10 @@ defmodule BoltNeo4jTest do
   end
 
   test "an invalid parameter value yields an error", %{port: port} do
-    cypher = "MATCH (n:Person {invalid: {an_elixir_datetime}}) RETURN TRUE"
+    cypher = "MATCH (n:Person {invalid: {an_unknown_type}}) RETURN TRUE"
 
     assert_raise BoltNeo4j.Packstream.EncodeError, ~r/^unable to encode value: /i, fn ->
-      Bolt.run_statement(:gen_tcp, port, cypher, %{an_elixir_datetime: DateTime.utc_now()})
+      Bolt.run_statement(:gen_tcp, port, cypher, %{an_unknown_type: %UnknownType{id: 3}})
     end
   end
 end
