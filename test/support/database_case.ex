@@ -11,13 +11,13 @@ defmodule BoltNeo4j.DatabaseCase do
       {Application.get_env(:bolt_neo4j, :user), Application.get_env(:bolt_neo4j, :password)}
 
     {:ok, port} = :gen_tcp.connect(host, bolt_port, active: false, mode: :binary, packet: :raw)
-    {:ok, _} = Bolt.handshake(:gen_tcp, port)
-    {:ok, _} = Bolt.init(:gen_tcp, port, credentials)
+    {:ok, options} = Bolt.handshake(:gen_tcp, port)
+    {:ok, _} = Bolt.init(:gen_tcp, port, credentials, options)
 
     on_exit(fn ->
       :gen_tcp.close(port)
     end)
 
-    {:ok, port: port}
+    {:ok, port: port, options: options}
   end
 end

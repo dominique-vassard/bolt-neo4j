@@ -36,16 +36,15 @@ defmodule BoltNeo4j.Bolt do
   """
   def handshake(transport, port, options \\ []) do
     recv_timeout = get_recv_timeout(options)
-    version = get_protocol_version(options)
 
-    do_handshake(transport, port, version, recv_timeout)
+    do_handshake(transport, port, recv_timeout)
   end
 
-  defp do_handshake(transport, port, version, recv_timeout) do
+  defp do_handshake(transport, port, recv_timeout) do
     # Define version list. Should be a 4 integer list
     # Example: [1, 0, 0, 0]
     versions =
-      ((version..0
+      ((@max_version..0
         |> Enum.into([])) ++ [0, 0, 0])
       |> Enum.take(4)
 
@@ -67,7 +66,7 @@ defmodule BoltNeo4j.Bolt do
     case transport.recv(port, 4, recv_timeout) do
       {:ok, <<x::32>> = packet} when x <= @max_version ->
         Logger.log_message(:server, :handshake, packet)
-        {:ok, x}
+        {:ok, [protocol_version: x, recv_timeout: recv_timeout]}
 
       {:error, _} ->
         {:error, "Couldn't handshake"}
@@ -92,7 +91,7 @@ defmodule BoltNeo4j.Bolt do
       iex> BoltNeo4j.Bolt.init :gen_tcp, port, {"username", "password"}
       {:ok, info}
   """
-  def init(transport, port, auth \\ {}, options \\ []) do
+  def init(transport, port, auth, options) do
     map_auth = get_auth(auth)
     recv_timeout = get_recv_timeout(options)
     version = get_protocol_version(options)
@@ -125,7 +124,7 @@ defmodule BoltNeo4j.Bolt do
 
   See "Shared options" in the documentation of this module.
   """
-  def ack_failure(transport, port, options \\ []) do
+  def ack_failure(transport, port, options) do
     recv_timeout = get_recv_timeout(options)
     version = get_protocol_version(options)
 
@@ -159,7 +158,7 @@ defmodule BoltNeo4j.Bolt do
 
   See "Shared options" in the documentation of this module.
   """
-  def run(transport, port, statement, parameters \\ %{}, options \\ []) do
+  def run(transport, port, statement, parameters, options) do
     recv_timeout = get_recv_timeout(options)
     version = get_protocol_version(options)
 
@@ -193,7 +192,7 @@ defmodule BoltNeo4j.Bolt do
 
   See "Shared options" in the documentation of this module.
   """
-  def pull_all(transport, port, options \\ []) do
+  def pull_all(transport, port, options) do
     version = get_protocol_version(options)
 
     Logger.log_message(:client, :pull_all, [])
@@ -215,7 +214,7 @@ defmodule BoltNeo4j.Bolt do
 
   See "Shared options" in the documentation of this module.
   """
-  def discard_all(transport, port, options \\ []) do
+  def discard_all(transport, port, options) do
     recv_timeout = get_recv_timeout(options)
     version = get_protocol_version(options)
 
@@ -247,7 +246,7 @@ defmodule BoltNeo4j.Bolt do
 
   See "Shared options" in the documentation of this module.
   """
-  def reset(transport, port, options \\ []) do
+  def reset(transport, port, options) do
     recv_timeout = get_recv_timeout(options)
     version = get_protocol_version(options)
 
@@ -291,7 +290,7 @@ defmodule BoltNeo4j.Bolt do
         {:success, %{"type" => "r"}}
       ]
   """
-  def run_statement(transport, port, statement, parameters \\ %{}, options \\ []) do
+  def run_statement(transport, port, statement, parameters, options) do
     with {:ok, success} <- run(transport, port, statement, parameters, options),
          {:ok, records} <- pull_all(transport, port, options) do
       [{:success, success} | records]
