@@ -19,6 +19,9 @@ defmodule BoltNeo4j.Types do
 
     defstruct [:crs, :srid, :x, :y, :z, :longitude, :latitude, :height]
 
+    defguardp is_valid_coords(x, y) when is_number(x) and is_number(y)
+    defguardp is_valid_coords(x, y, z) when is_number(x) and is_number(y) and is_number(z)
+
     def create(:cartesian, x, y) do
       create(@srid_cartesian, x, y)
     end
@@ -27,7 +30,7 @@ defmodule BoltNeo4j.Types do
       create(@srid_wgs_84, longitude, latitude)
     end
 
-    def create(@srid_cartesian, x, y) when is_number(x) and is_number(y) do
+    def create(@srid_cartesian, x, y) when is_valid_coords(x, y) do
       %Point{
         crs: crs(@srid_cartesian),
         srid: @srid_cartesian,
@@ -36,8 +39,7 @@ defmodule BoltNeo4j.Types do
       }
     end
 
-    def create(@srid_wgs_84, longitude, latitude)
-        when is_number(longitude) and is_number(latitude) do
+    def create(@srid_wgs_84, longitude, latitude) when is_valid_coords(longitude, latitude) do
       %Point{
         crs: crs(@srid_wgs_84),
         srid: @srid_wgs_84,
@@ -56,7 +58,7 @@ defmodule BoltNeo4j.Types do
       create(@srid_wgs_84_3d, longitude, latitude, height)
     end
 
-    def create(@srid_cartesian_3d, x, y, z) when is_number(x) and is_number(y) and is_number(z) do
+    def create(@srid_cartesian_3d, x, y, z) when is_valid_coords(x, y, z) do
       %Point{
         crs: crs(@srid_cartesian_3d),
         srid: @srid_cartesian_3d,
@@ -67,7 +69,7 @@ defmodule BoltNeo4j.Types do
     end
 
     def create(@srid_wgs_84_3d, longitude, latitude, height)
-        when is_number(longitude) and is_number(latitude) and is_number(height) do
+        when is_valid_coords(longitude, latitude, height) do
       %Point{
         crs: crs(@srid_wgs_84_3d),
         srid: @srid_wgs_84_3d,
