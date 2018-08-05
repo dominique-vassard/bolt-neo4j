@@ -67,7 +67,7 @@ defmodule BoltNeo4j.Bolt do
     case transport.recv(port, 4, recv_timeout) do
       {:ok, <<x::32>> = packet} when x <= @max_version ->
         Logger.log_message(:server, :handshake, packet)
-        {:ok, version}
+        {:ok, x}
 
       {:error, _} ->
         {:error, "Couldn't handshake"}
