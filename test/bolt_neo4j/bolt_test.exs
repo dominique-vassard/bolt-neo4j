@@ -51,7 +51,10 @@ defmodule BoltNeo4j.BoltTest do
       assert {:ok, options} = Bolt.handshake(:gen_tcp, port_)
       assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass}, options)
 
-      assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
+      #  'result_available_after' and 'result_consumed_after' seems to be not available in Neo4j 3.0
+      # assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
+      #          Bolt.run(:gen_tcp, port_, "RETURN 1 AS num", %{}, options)
+      assert {:ok, %{"fields" => ["num"]}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num", %{}, options)
     end
 
@@ -60,7 +63,10 @@ defmodule BoltNeo4j.BoltTest do
       assert {:ok, options} = Bolt.handshake(:gen_tcp, port_)
       assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass}, options)
 
-      assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
+      #  'result_available_after' and 'result_consumed_after' seems to be not available in Neo4j 3.0
+      # assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
+      #          Bolt.run(:gen_tcp, port_, "RETURN {num} AS num", %{num: 5}, options)
+      assert {:ok, %{"fields" => ["num"]}} =
                Bolt.run(:gen_tcp, port_, "RETURN {num} AS num", %{num: 5}, options)
     end
 
@@ -82,7 +88,10 @@ defmodule BoltNeo4j.BoltTest do
       {:error, _} = Bolt.pull_all(:gen_tcp, port_, options)
       :ok = Bolt.ack_failure(:gen_tcp, port_, options)
 
-      assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
+      #  'result_available_after' and 'result_consumed_after' seems to be not available in Neo4j 3.0
+      # assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
+      #          Bolt.run(:gen_tcp, port_, "RETURN 1 AS num", %{}, options)
+      assert {:ok, %{"fields" => ["num"]}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num", %{}, options)
 
       {:ok, [{:record, _}, {:success, _}]} = Bolt.pull_all(:gen_tcp, port_, options)
@@ -95,7 +104,10 @@ defmodule BoltNeo4j.BoltTest do
       assert {:ok, options} = Bolt.handshake(:gen_tcp, port_)
       assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass}, options)
 
-      assert {:ok, %{"fields" => ["num"], "result_available_after" => _}} =
+      #  'result_available_after' and 'result_consumed_after' seems to be not available in Neo4j 3.0
+      # assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
+      #          Bolt.run(:gen_tcp, port_, "RETURN 1 AS num", %{}, options)
+      assert {:ok, %{"fields" => ["num"]}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num", %{}, options)
 
       {:ok, [{:record, _}, {:success, _}]} = Bolt.pull_all(:gen_tcp, port_, options)
@@ -119,7 +131,10 @@ defmodule BoltNeo4j.BoltTest do
       assert {:ok, options} = Bolt.handshake(:gen_tcp, port_)
       assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass}, options)
 
-      assert {:ok, %{"fields" => ["num"], "result_available_after" => _}} =
+      #  'result_available_after' and 'result_consumed_after' seems to be not available in Neo4j 3.0
+      # assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
+      #          Bolt.run(:gen_tcp, port_, "RETURN 1 AS num", %{}, options)
+      assert {:ok, %{"fields" => ["num"]}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num", %{}, options)
 
       assert {:ok, _} = Bolt.discard_all(:gen_tcp, port_, options)
@@ -132,7 +147,10 @@ defmodule BoltNeo4j.BoltTest do
       assert {:ok, options} = Bolt.handshake(:gen_tcp, port_)
       assert {:ok, _} = Bolt.init(:gen_tcp, port_, {@user, @pass}, options)
 
-      assert {:ok, %{"fields" => ["num"], "result_available_after" => _}} =
+      #  'result_available_after' and 'result_consumed_after' seems to be not available in Neo4j 3.0
+      # assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
+      #          Bolt.run(:gen_tcp, port_, "RETURN 1 AS num", %{}, options)
+      assert {:ok, %{"fields" => ["num"]}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num", %{}, options)
 
       :ok = Bolt.reset(:gen_tcp, port_, options)
@@ -147,7 +165,10 @@ defmodule BoltNeo4j.BoltTest do
       {:error, _} = Bolt.pull_all(:gen_tcp, port_, options)
       :ok = Bolt.reset(:gen_tcp, port_, options)
 
-      assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
+      #  'result_available_after' and 'result_consumed_after' seems to be not available in Neo4j 3.0
+      # assert {:ok, %{"fields" => ["num"], "result_available_after" => _r}} =
+      #          Bolt.run(:gen_tcp, port_, "RETURN 1 AS num", %{}, options)
+      assert {:ok, %{"fields" => ["num"]}} =
                Bolt.run(:gen_tcp, port_, "RETURN 1 AS num", %{}, options)
 
       {:ok, [{:record, _}, {:success, _}]} = Bolt.pull_all(:gen_tcp, port_, options)

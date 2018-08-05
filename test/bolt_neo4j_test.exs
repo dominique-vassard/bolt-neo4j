@@ -10,10 +10,17 @@ defmodule BoltNeo4jTest do
   test "Simple query without parameters", %{port: port, options: options} do
     res = Bolt.run_statement(:gen_tcp, port, "RETURN 1 AS num", %{}, options)
 
+    #  'result_available_after' and 'result_consumed_after' seems to be not available in Neo4j 3.0
+    # assert [
+    #          success: %{"fields" => ["num"], "result_available_after" => _},
+    #          record: [1],
+    #          success: %{"result_consumed_after" => _, "type" => "r"}
+    #        ] = res
+
     assert [
-             success: %{"fields" => ["num"], "result_available_after" => _},
+             success: %{"fields" => ["num"]},
              record: [1],
-             success: %{"result_consumed_after" => _, "type" => "r"}
+             success: %{"type" => "r"}
            ] = res
   end
 
@@ -29,10 +36,17 @@ defmodule BoltNeo4jTest do
         options
       )
 
+    #  'result_available_after' and 'result_consumed_after' seems to be not available in Neo4j 3.0
+    # assert [
+    #          success: %{"fields" => ["return_string"], "result_available_after" => _},
+    #          record: ["A gentle string!"],
+    #          success: %{"result_consumed_after" => _, "type" => "r"}
+    #        ] = res
+
     assert [
-             success: %{"fields" => ["return_string"], "result_available_after" => _},
+             success: %{"fields" => ["return_string"]},
              record: ["A gentle string!"],
-             success: %{"result_consumed_after" => _, "type" => "r"}
+             success: %{"type" => "r"}
            ] = res
   end
 
